@@ -9,6 +9,7 @@ using Lykke.Service.Dash.Api.Services;
 using Lykke.SettingsReader;
 using Lykke.Service.Dash.Api.AzureRepositories.Balance;
 using Lykke.Service.Dash.Api.AzureRepositories.BalancePositive;
+using Lykke.Service.Dash.Api.PeriodicalHandlers;
 
 namespace Lykke.Service.Dash.Api.Modules
 {
@@ -69,6 +70,18 @@ namespace Lykke.Service.Dash.Api.Modules
             builder.RegisterType<DashService>()
                 .As<IDashService>()
                 .WithParameter(TypedParameter.From(_settings.CurrentValue))
+                .SingleInstance();
+
+            builder.RegisterType<BalanceHandler>()
+                .As<IStartable>()
+                .AutoActivate()
+                .WithParameter("period", _settings.CurrentValue.BalanceCheckerInterval)
+                .SingleInstance();
+
+            builder.RegisterType<BroadcastHandler>()
+                .As<IStartable>()
+                .AutoActivate()
+                .WithParameter("period", _settings.CurrentValue.BroadcastCheckerInterval)
                 .SingleInstance();
         }
     }

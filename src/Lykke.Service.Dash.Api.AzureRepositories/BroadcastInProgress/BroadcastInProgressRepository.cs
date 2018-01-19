@@ -28,7 +28,7 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.BroadcastInProgress
 
         public async Task AddAsync(Guid operationId, string hash)
         {
-            await _table.InsertAsync(new BroadcastInProgressEntity
+            await _table.InsertOrReplaceAsync(new BroadcastInProgressEntity
             {
                 PartitionKey = GetPartitionKey(),
                 RowKey = GetRowKey(operationId),

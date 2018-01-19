@@ -13,6 +13,7 @@ using Lykke.Service.Dash.Api.Core.Domain;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
+    [Route("api/transactions")]
     public class TransactionsController : Controller
     {
         private readonly IDashService _dashService;
@@ -65,6 +66,12 @@ namespace Lykke.Service.Dash.Api.Controllers
             if (!ModelState.IsValid)
             {
                 return BadRequest(ErrorResponse.Create("ValidationError", ModelState));
+            }
+
+            var broadcast = await _dashService.GetBroadcastAsync(request.OperationId);
+            if (broadcast != null)
+            {
+                return new StatusCodeResult(StatusCodes.Status409Conflict);
             }
 
             var transaction = _dashService.GetTransaction(request.SignedTransaction);

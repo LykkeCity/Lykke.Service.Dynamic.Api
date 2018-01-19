@@ -89,7 +89,7 @@ namespace Lykke.Service.Dash.Api.Controllers
         [HttpGet("update")]
         public async Task UpdateBalances()
         {
-            await _dashService.UpdateObservedBalances();
+            await _dashService.UpdateBalances();
         }
     }
 }

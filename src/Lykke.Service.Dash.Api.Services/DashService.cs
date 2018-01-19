@@ -193,18 +193,18 @@ namespace Lykke.Service.Dash.Api.Services
                 }
             }
 
-            await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateObservedBalances),
+            await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBroadcasts),
                 $"{completedBroadcasts} completed broadcasts were found");
         }
 
-        public async Task UpdateObservedBalances()
+        public async Task UpdateBalances()
         {
             var positiveBalances = 0;
 
             var balances = await _balanceRepository.GetAllAsync();
             if (balances == null && !balances.Any())
             {
-                await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateObservedBalances), 
+                await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBalances), 
                     "There are no addresses to observe");
 
                 return;
@@ -219,7 +219,7 @@ namespace Lykke.Service.Dash.Api.Services
                 }
             }
 
-            await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateObservedBalances),
+            await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBalances),
                 $"{positiveBalances} addresses with positive balance were found");
         }
 

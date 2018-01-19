@@ -9,5 +9,7 @@
         public ulong MaxFee { get; set; }
         public ulong FeePerByte { get; set; }
         public int MinConfirmations { get; set; }
+        public int BalanceCheckerInterval { get; set; }
+        public int BroadcastCheckerInterval { get; set; }
     }
 }

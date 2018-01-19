@@ -24,6 +24,6 @@ namespace Lykke.Service.Dash.Api.Core.Services
 
         Task UpdateBroadcasts();
 
-        Task UpdateObservedBalances();
+        Task UpdateBalances();
     }
 }

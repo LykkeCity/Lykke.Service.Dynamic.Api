@@ -52,7 +52,7 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.Transaction
 
         public async Task SaveAsCompletedAsync(Guid operationId, decimal amount, decimal fee)
         {
-            await _table.MergeAsync(GetPartitionKey(), GetRowKey(operationId), x =>
+            await _table.ReplaceAsync(GetPartitionKey(), GetRowKey(operationId), x =>
             {
                 x.State = BroadcastState.Completed;
                 x.CompletedUtc = DateTime.UtcNow;
