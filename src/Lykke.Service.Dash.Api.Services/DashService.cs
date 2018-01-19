@@ -245,7 +245,7 @@ namespace Lykke.Service.Dash.Api.Services
         {
             try
             {
-                var addresses = transaction.Inputs.Select(f => f.ScriptSig.GetScriptAddress(_network).ToString());
+                var addresses = transaction.Inputs.Select(f => f.ScriptSig.GetDestinationAddress(_network).ToString());
 
                 await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
                     $"addresses={String.Join(",", addresses)}", $"Addresses to refresh");

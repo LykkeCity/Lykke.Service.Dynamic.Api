@@ -447,7 +447,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "846faabe-d3d1-49f4-8af1-5ccef532fc5c",
+								"id": "98545d8d-684e-46d0-bd9b-c3169276fa86",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -455,14 +455,17 @@
 									"});",
 									"",
 									"var jsonData = JSON.parse(responseBody);",
-									"var current = jsonData.status;",
+									"var current = jsonData.state;",
 									"var expected = \"completed\";",
 									"",
 									"if(current == expected){",
-									"    console.info(\"Transaction completed\");",
+									"    console.info(\"Transaction completed with fee=\" + jsonData.fee);",
+									"    ",
+									"    pm.environment.set(\"fee\", jsonData.fee);",
 									"} else {",
-									"    console.info(\"Wait 20 secs\");",
-									"    setTimeout(function(){}, 20000);",
+									"    console.info(\"current state:\" + current);",
+									"    console.info(\"Wait 60 secs\");",
+									"    setTimeout(function(){}, 60000);",
 									"    postman.setNextRequest(\"/api/transactions/broadcast/{operationId} - wait transaction completion\");",
 									"}"
 								]
@@ -506,7 +509,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "341a707e-420c-441a-a0b8-6c28b0687101",
+								"id": "53547bf1-1c6c-47d0-bd7b-984ea19fbf24",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -525,9 +528,14 @@
 									"        }",
 									"    }",
 									"    ",
+									"    var dwBalanceBefore = pm.environment.get(\"dwBalance\");",
 									"    var amount = pm.environment.get(\"amount\");",
-									"    var dwBalanceExpected = Number(pm.environment.get(\"dwBalance\")) + Number(amount);",
+									"    var fee = pm.environment.get(\"fee\");",
+									"    var dwBalanceExpected = Number(dwBalanceBefore) - Number(amount)- Number(fee);",
 									"    ",
+									"    console.info(\"amount: \" + amount);",
+									"    console.info(\"fee: \" + fee);",
+									"    console.info(\"dwBalanceBefore: \" + dwBalanceBefore);    ",
 									"    console.info(\"dwBalanceCurrent: \" + dwBalanceCurrent);",
 									"    console.info(\"dwBalanceExpected: \" + dwBalanceExpected);",
 									"",
