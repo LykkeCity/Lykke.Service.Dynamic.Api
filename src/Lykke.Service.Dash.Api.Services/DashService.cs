@@ -223,6 +223,24 @@ namespace Lykke.Service.Dash.Api.Services
                 $"{positiveBalances} addresses with positive balance were found");
         }
 
+        public async Task<decimal> RefreshAddressBalance(string address)
+        {
+            var satoshis = await _dashInsightClient.GetBalanceInSatoshis(address);
+            if (satoshis > 0)
+            {
+                var money = Money.FromUnit(satoshis, MoneyUnit.Satoshi);
+                var amount = money.ToDecimal(Asset.Dash.Unit);
+
+                await _balancePositiveRepository.SaveAsync(address, amount);
+
+                return amount;
+            }
+
+            await _balancePositiveRepository.DeleteAsync(address);
+
+            return 0m;
+        }
+
         private async Task RefreshBalances(Transaction transaction)
         {
             try
@@ -230,7 +248,7 @@ namespace Lykke.Service.Dash.Api.Services
                 var addresses = transaction.Inputs.Select(f => f.ScriptSig.GetScriptAddress(_network).ToString());
 
                 await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                    $"address={String.Join(",", addresses)}", $"Addresses to refresh");
+                    $"addresses={String.Join(",", addresses)}", $"Addresses to refresh");
 
                 foreach (var address in addresses)
                 {
@@ -256,24 +274,6 @@ namespace Lykke.Service.Dash.Api.Services
                 await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
                     $"ex={ex.ToString()}", $"Failed to refresh balances after transaction broadcast");
             }
-        }
-
-        public async Task<decimal> RefreshAddressBalance(string address)
-        {
-            var satoshis = await _dashInsightClient.GetBalanceInSatoshis(address);
-            if (satoshis > 0)
-            {
-                var money = Money.FromUnit(satoshis, MoneyUnit.Satoshi);
-                var amount = money.ToDecimal(Asset.Dash.Unit);
-
-                await _balancePositiveRepository.SaveAsync(address, amount);
-
-                return amount;
-            }
-
-            await _balancePositiveRepository.DeleteAsync(address);
-
-            return 0m;
         }
 
         private Money CalculateFee(TransactionBuilder txBuilder)

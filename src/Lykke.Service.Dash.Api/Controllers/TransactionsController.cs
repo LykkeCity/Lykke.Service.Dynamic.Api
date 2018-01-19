@@ -109,13 +109,19 @@ namespace Lykke.Service.Dash.Api.Controllers
                 return new StatusCodeResult(StatusCodes.Status204NoContent);
             }
 
+            var amount = broadcast.Amount.HasValue ?
+                Conversions.CoinsToContract(broadcast.Amount.Value, Asset.Dash.Accuracy) : "";
+
+            var fee = broadcast.Fee.HasValue ?
+                Conversions.CoinsToContract(broadcast.Fee.Value, Asset.Dash.Accuracy) : "";
+
             return Ok(new BroadcastedTransactionResponse
             {
                 OperationId = broadcast.OperationId,
                 Hash = broadcast.Hash,
                 State = broadcast.State.ToBroadcastedTransactionState(),
-                Amount = broadcast.Amount?.ToString(),
-                Fee = broadcast.Fee?.ToString(),
+                Amount = amount,
+                Fee = fee,
                 Error = broadcast.Error,
                 Timestamp = broadcast.GetTimestamp(),
             });
