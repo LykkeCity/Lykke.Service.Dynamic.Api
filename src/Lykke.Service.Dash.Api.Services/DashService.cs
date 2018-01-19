@@ -45,7 +45,7 @@ namespace Lykke.Service.Dash.Api.Services
             _balancePositiveRepository = balancePositiveRepository;
             _dashApiSettings = dashApiSettings;
             _network = Network.GetNetwork(_dashApiSettings.Network);
-            _feeRate = new FeeRate(_dashApiSettings.FeePerByte * 1024);
+            _feeRate = new FeeRate(_dashApiSettings.FeePerByteSatoshis * 1024);
         }
 
         public BitcoinAddress GetBitcoinAddress(string address)
@@ -253,8 +253,8 @@ namespace Lykke.Service.Dash.Api.Services
         private Money CalculateFee(TransactionBuilder txBuilder)
         {
             var fee = txBuilder.EstimateFees(_feeRate);
-            var min = Money.Satoshis(_dashApiSettings.MinFee);
-            var max = Money.Satoshis(_dashApiSettings.MaxFee);
+            var min = Money.Satoshis(_dashApiSettings.MinFeeSatoshis);
+            var max = Money.Satoshis(_dashApiSettings.MaxFeeSatoshis);
 
             return Money.Max(Money.Min(fee, max), min);
         }

@@ -5,11 +5,11 @@
         public DbSettings Db { get; set; }
         public string Network { get; set; }
         public string InsightApiUrl { get; set; }
-        public ulong MinFee { get; set; }
-        public ulong MaxFee { get; set; }
-        public ulong FeePerByte { get; set; }
+        public ulong MinFeeSatoshis { get; set; }
+        public ulong MaxFeeSatoshis { get; set; }
+        public ulong FeePerByteSatoshis { get; set; }
         public int MinConfirmations { get; set; }
-        public int BalanceCheckerInterval { get; set; }
-        public int BroadcastCheckerInterval { get; set; }
+        public int BalanceCheckerIntervalMs { get; set; }
+        public int BroadcastCheckerIntervalMs { get; set; }
     }
 }

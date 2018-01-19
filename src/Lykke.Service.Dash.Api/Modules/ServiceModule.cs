@@ -75,13 +75,13 @@ namespace Lykke.Service.Dash.Api.Modules
             builder.RegisterType<BalanceHandler>()
                 .As<IStartable>()
                 .AutoActivate()
-                .WithParameter("period", _settings.CurrentValue.BalanceCheckerInterval)
+                .WithParameter("period", _settings.CurrentValue.BalanceCheckerIntervalMs)
                 .SingleInstance();
 
             builder.RegisterType<BroadcastHandler>()
                 .As<IStartable>()
                 .AutoActivate()
-                .WithParameter("period", _settings.CurrentValue.BroadcastCheckerInterval)
+                .WithParameter("period", _settings.CurrentValue.BroadcastCheckerIntervalMs)
                 .SingleInstance();
         }
     }
