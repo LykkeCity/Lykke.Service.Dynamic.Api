@@ -60,6 +60,13 @@ namespace Lykke.Service.Dash.Api.Controllers
             });
         }
 
+        [HttpPut]
+        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
+        public IActionResult Rebuild()
+        {
+            return new StatusCodeResult(StatusCodes.Status501NotImplemented);
+        }
+
         [HttpPost("broadcast")]
         public async Task<IActionResult> Broadcast([Required, FromBody] BroadcastTransactionRequest request)
         {
@@ -83,6 +90,13 @@ namespace Lykke.Service.Dash.Api.Controllers
             await _dashService.BroadcastAsync(transaction, request.OperationId);
 
             return Ok();
+        }
+
+        [HttpPost("broadcast/batched")]
+        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
+        public IActionResult BroadcastBatched()
+        {
+            return new StatusCodeResult(StatusCodes.Status501NotImplemented);
         }
 
         [HttpGet("broadcast/{operationId}")]
