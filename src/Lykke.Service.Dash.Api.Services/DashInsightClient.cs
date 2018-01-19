@@ -22,7 +22,7 @@ namespace Lykke.Service.Dash.Api.Services
 
         public async Task<decimal> GetBalance(string address)
         {
-            var url = $"{_url}/addr/{address}?noTxList=1";
+            var url = $"{_url}/addr/{address}?noTxList=1&uid={Guid.NewGuid()}";
 
             try
             {

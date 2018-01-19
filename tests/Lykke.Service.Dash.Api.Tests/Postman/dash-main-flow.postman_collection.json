@@ -261,7 +261,7 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"id": "098fde8d-af7d-46ca-a334-b2a917e34d55",
+								"id": "a6d3ae61-4806-4abf-bbe0-7938eac2a40a",
 								"type": "text/javascript",
 								"exec": [
 									"function S4() {",
@@ -279,7 +279,7 @@
 									"var assetAccuracy = pm.environment.get(\"assetAccuracy\")",
 									"",
 									"pm.environment.set(\"operationId\", newGuid);",
-									"pm.environment.set(\"amount\", 13 * assetAccuracy);"
+									"pm.environment.set(\"amount\", 13 * Math.pow(10, assetAccuracy));"
 								]
 							}
 						},
