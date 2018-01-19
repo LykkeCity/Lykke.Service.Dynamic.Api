@@ -85,11 +85,5 @@ namespace Lykke.Service.Dash.Api.Controllers
 
             return Ok();
         }
-
-        [HttpGet("update")]
-        public async Task UpdateBalances()
-        {
-            await _dashService.UpdateBalances();
-        }
     }
 }

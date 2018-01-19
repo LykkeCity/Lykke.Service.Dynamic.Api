@@ -133,11 +133,5 @@ namespace Lykke.Service.Dash.Api.Controllers
 
         //    return Ok();
         //}
-
-        [HttpGet("broadcast/update")]
-        public async Task UpdateBroadcasts()
-        {
-            await _dashService.UpdateBroadcasts();
-        }
     }
 }
