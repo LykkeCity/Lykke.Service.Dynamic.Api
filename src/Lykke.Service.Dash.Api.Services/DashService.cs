@@ -72,18 +72,23 @@ namespace Lykke.Service.Dash.Api.Services
             }
         }
 
-        public async Task<string> BuildTransactionAsync(BitcoinAddress fromAddress, BitcoinAddress toAddress, 
+        public async Task<string> BuildTransactionAsync(BitcoinAddress fromAddress, BitcoinAddress toAddress,
             decimal amount, bool includeFee)
         {
+            var sendAmount = Money.FromUnit(amount, Asset.Dash.Unit);
+
             var txsUnspent = await _dashInsightClient.GetTxsUnspentAsync(fromAddress.ToString());
             if (txsUnspent == null || !txsUnspent.Any())
             {
                 throw new Exception($"There are no assets in {nameof(fromAddress)} address");
             }
 
-            var sendAmount = Money.FromUnit(amount, Asset.Dash.Unit);
-            var totalIn = Money.Zero;
-            var totalOut = Money.Zero;
+            var availableAmount = txsUnspent.Sum(f => f.Amount);
+            if (availableAmount < amount)
+            {
+                throw new Exception($"There are no enough assets in {nameof(fromAddress)} address: " +
+                    $"available={availableAmount}, required: {amount}");
+            }
 
             var builder = new TransactionBuilder()
                 .Send(toAddress, sendAmount)
@@ -98,11 +103,6 @@ namespace Lykke.Service.Dash.Api.Services
                 builder.SubtractFees();
             }
 
-            txsUnspent = txsUnspent
-                .OrderByDescending(x => x.Confirmations)
-                .ThenBy(x => x.Vout)
-                .ToArray();
-
             foreach (var txUnspent in txsUnspent)
             {
                 var coin = new Coin(
@@ -112,24 +112,17 @@ namespace Lykke.Service.Dash.Api.Services
                     scriptPubKey: fromAddress.ScriptPubKey);
 
                 builder.AddCoins(coin);
-
-                var fee = CalculateFee(builder);
-
-                totalIn += coin.Amount;
-                totalOut = includeFee ? sendAmount - fee : sendAmount + fee;
-
-                if (totalOut <= totalIn)
-                {
-                    var tx = builder
-                        .SendFees(fee)
-                        .BuildTransaction(false);
-
-                    return Serializer.ToString((tx: tx, coins: builder.FindSpentCoins(tx)));
-                }
             }
 
-            throw new Exception($"There are no enough assets in {nameof(fromAddress)} address: " +
-                $"available={totalIn.ToDecimal(Asset.Dash.Unit)}, required: {totalOut.ToDecimal(Asset.Dash.Unit)}");
+            var fee = CalculateFee(builder);
+
+            var tx = builder
+                .SendFees(fee)
+                .BuildTransaction(false);
+
+            var coins = builder.FindSpentCoins(tx);
+
+            return Serializer.ToString((tx: tx, coins: coins));
         }
 
         public async Task BroadcastAsync(Transaction transaction, Guid operationId)
@@ -225,27 +218,24 @@ namespace Lykke.Service.Dash.Api.Services
 
         public async Task<decimal> RefreshAddressBalance(string address)
         {
-            var satoshis = await _dashInsightClient.GetBalanceInSatoshis(address);
-            if (satoshis > 0)
+            var balance = await _dashInsightClient.GetBalance(address);
+            if (balance > 0)
             {
-                var money = Money.FromUnit(satoshis, MoneyUnit.Satoshi);
-                var amount = money.ToDecimal(Asset.Dash.Unit);
-
-                await _balancePositiveRepository.SaveAsync(address, amount);
-
-                return amount;
+                await _balancePositiveRepository.SaveAsync(address, balance);
+            }
+            else
+            {
+                await _balancePositiveRepository.DeleteAsync(address);
             }
 
-            await _balancePositiveRepository.DeleteAsync(address);
-
-            return 0m;
+            return balance;
         }
 
         private async Task RefreshBalances(Transaction transaction)
         {
             try
             {
-                var addresses = transaction.Inputs.Select(f => f.ScriptSig.GetDestinationAddress(_network).ToString());
+                var addresses = transaction.Inputs.Select(f => f.ScriptSig.GetSignerAddress(_network).ToString());
 
                 await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
                     $"addresses={String.Join(",", addresses)}", $"Addresses to refresh");
@@ -255,17 +245,15 @@ namespace Lykke.Service.Dash.Api.Services
                     var balance = await _balanceRepository.GetAsync(address);
                     if (balance != null)
                     {
-                        var satoshis = await _dashInsightClient.GetBalanceInSatoshis(address);
-                        var money = Money.FromUnit(satoshis, MoneyUnit.Satoshi);
-                        var amount = money.ToDecimal(Asset.Dash.Unit);
+                        var amountBefore = await _dashInsightClient.GetBalance(address);
 
                         await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                            $"address={address}, amount={amount}", $"Balance before refresh");
+                            $"address={address}, amountBefore={amountBefore}", $"Balance before refresh");
 
-                        amount = await RefreshAddressBalance(address);
+                        var amountAfter = await RefreshAddressBalance(address);
 
                         await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                            $"address={address}, amount={amount}", $"Balance after refresh");
+                            $"address={address}, amountAfter={amountAfter}", $"Balance after refresh");
                     }
                 }
             }

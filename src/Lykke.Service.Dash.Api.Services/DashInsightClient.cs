@@ -20,13 +20,15 @@ namespace Lykke.Service.Dash.Api.Services
             _url = url;
         }
 
-        public async Task<ulong> GetBalanceInSatoshis(string address)
+        public async Task<decimal> GetBalance(string address)
         {
-            var url = $"{_url}/addr/{address}/balance";
+            var url = $"{_url}/addr/{address}?noTxList=1";
 
             try
             {
-                return await GetJson<ulong>(url);
+                var addr = await GetJson<Address>(url);
+
+                return addr.Balance - addr.UnconfirmedBalance;
             }
             catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
             {

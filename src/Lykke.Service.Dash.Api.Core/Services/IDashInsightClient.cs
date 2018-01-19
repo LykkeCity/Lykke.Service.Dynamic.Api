@@ -5,7 +5,7 @@ namespace Lykke.Service.Dash.Api.Core.Services
 {
     public interface IDashInsightClient
     {
-        Task<ulong> GetBalanceInSatoshis(string address);
+        Task<decimal> GetBalance(string address);
 
         Task<Tx> GetTx(string txid);
 
