@@ -225,32 +225,40 @@ namespace Lykke.Service.Dash.Api.Services
 
         private async Task RefreshBalances(Transaction transaction)
         {
-            var addresses = transaction.Inputs.Select(f => f.ScriptSig.GetScriptAddress(_network).ToString());
-
-            await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                $"address={String.Join(",", addresses)}", $"Addresses to refresh");
-
-            foreach (var address in addresses)
+            try
             {
-                var balance = await _balanceRepository.GetAsync(address);
-                if (balance != null)
+                var addresses = transaction.Inputs.Select(f => f.ScriptSig.GetScriptAddress(_network).ToString());
+
+                await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
+                    $"address={String.Join(",", addresses)}", $"Addresses to refresh");
+
+                foreach (var address in addresses)
                 {
-                    var satoshis = await _dashInsightClient.GetBalanceInSatoshis(address);
-                    var money = Money.FromUnit(satoshis, MoneyUnit.Satoshi);
-                    var amount = money.ToDecimal(Asset.Dash.Unit);
+                    var balance = await _balanceRepository.GetAsync(address);
+                    if (balance != null)
+                    {
+                        var satoshis = await _dashInsightClient.GetBalanceInSatoshis(address);
+                        var money = Money.FromUnit(satoshis, MoneyUnit.Satoshi);
+                        var amount = money.ToDecimal(Asset.Dash.Unit);
 
-                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                        $"address={address}, amount={amount}", $"Balance before refresh");
+                        await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
+                            $"address={address}, amount={amount}", $"Balance before refresh");
 
-                    amount = await RefreshAddressBalance(address);
+                        amount = await RefreshAddressBalance(address);
 
-                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                        $"address={address}, amount={amount}", $"Balance after refresh");
+                        await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
+                            $"address={address}, amount={amount}", $"Balance after refresh");
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
+                    $"ex={ex.ToString()}", $"Failed to refresh balances after transaction broadcast");
             }
         }
 
-        private async Task<decimal> RefreshAddressBalance(string address)
+        public async Task<decimal> RefreshAddressBalance(string address)
         {
             var satoshis = await _dashInsightClient.GetBalanceInSatoshis(address);
             if (satoshis > 0)

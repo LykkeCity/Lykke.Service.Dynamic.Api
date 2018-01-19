@@ -61,6 +61,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             await _balanceRepository.AddAsync(address);
+            await _dashService.RefreshAddressBalance(address);
 
             return Ok();
         }
