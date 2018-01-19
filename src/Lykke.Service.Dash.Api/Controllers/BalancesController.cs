@@ -36,7 +36,8 @@ namespace Lykke.Service.Dash.Api.Controllers
             
             return PaginationResponse.From(
                 result.Continuation, 
-                result.Items.Select(f => f.ToWalletBalanceContract()).ToArray());
+                result.Items.Select(f => f.ToWalletBalanceContract()).ToArray()
+            );
        }
 
         [HttpPost("{address}/observation")]

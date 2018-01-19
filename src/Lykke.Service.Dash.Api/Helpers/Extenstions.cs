@@ -1,4 +1,5 @@
-﻿using Lykke.Service.BlockchainApi.Contract.Assets;
+﻿using Lykke.Service.BlockchainApi.Contract;
+using Lykke.Service.BlockchainApi.Contract.Assets;
 using Lykke.Service.BlockchainApi.Contract.Balances;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Dash.Api.Core.Domain;
@@ -57,10 +58,9 @@ namespace Lykke.Service.Dash.Api.Helpers
         {
             return new WalletBalanceContract
             {
-                
                 Address = self.Address,
                 AssetId = Asset.Dash.Id,
-                Balance = self.Amount.ToString()
+                Balance = Conversions.CoinsToContract(self.Amount, Asset.Dash.Accuracy)
             };
         }
     }
