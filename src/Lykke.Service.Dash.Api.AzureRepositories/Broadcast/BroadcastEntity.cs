@@ -4,7 +4,7 @@ using Lykke.AzureStorage.Tables.Entity.Annotation;
 using Lykke.AzureStorage.Tables.Entity.ValueTypesMerging;
 using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
 
-namespace Lykke.Service.Dash.Api.AzureRepositories.Transaction
+namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
 {
     [ValueTypeMergingStrategy(ValueTypeMergingStrategy.UpdateAlways)]
     public class BroadcastEntity : AzureTableEntity, IBroadcast

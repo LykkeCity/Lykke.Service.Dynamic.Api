@@ -261,7 +261,7 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"id": "a6d3ae61-4806-4abf-bbe0-7938eac2a40a",
+								"id": "9fd612a3-f3a2-461f-920e-f3666264d29f",
 								"type": "text/javascript",
 								"exec": [
 									"function S4() {",
@@ -279,7 +279,7 @@
 									"var assetAccuracy = pm.environment.get(\"assetAccuracy\")",
 									"",
 									"pm.environment.set(\"operationId\", newGuid);",
-									"pm.environment.set(\"amount\", 13 * Math.pow(10, assetAccuracy));"
+									"pm.environment.set(\"amount\", 5 * Math.pow(10, assetAccuracy));"
 								]
 							}
 						},
@@ -312,7 +312,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"operationId\": \"{{operationId}}\",\r\n  \"fromAddress\": \"{{dw-address}}\",\r\n  \"toAddress\": \"{{hw-address}}\",\r\n  \"assetId\": \"{{asset-id}}\",\r\n  \"amount\": {{amount}},\r\n  \"includeFee\": false\r\n}"
+							"raw": "{\r\n  \"operationId\": \"{{operationId}}\",\r\n  \"fromAddress\": \"{{dw-address}}\",\r\n  \"toAddress\": \"{{hw-address}}\",\r\n  \"assetId\": \"{{asset-id}}\",\r\n  \"amount\": {{amount}},\r\n  \"includeFee\": true\r\n}"
 						},
 						"url": {
 							"raw": "{{domain-api}}/api/transactions",
@@ -447,7 +447,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "98545d8d-684e-46d0-bd9b-c3169276fa86",
+								"id": "9c6ca619-7af2-40f0-8c2b-b59a760fbd7b",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -460,8 +460,6 @@
 									"",
 									"if(current == expected){",
 									"    console.info(\"Transaction completed with fee=\" + jsonData.fee);",
-									"    ",
-									"    pm.environment.set(\"fee\", jsonData.fee);",
 									"} else {",
 									"    console.info(\"current state:\" + current);",
 									"    console.info(\"Wait 60 secs\");",
@@ -509,7 +507,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "53547bf1-1c6c-47d0-bd7b-984ea19fbf24",
+								"id": "f4c9c0a7-9f6d-401b-b5a5-4ba231e0e8f4",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -530,11 +528,9 @@
 									"    ",
 									"    var dwBalanceBefore = pm.environment.get(\"dwBalance\");",
 									"    var amount = pm.environment.get(\"amount\");",
-									"    var fee = pm.environment.get(\"fee\");",
-									"    var dwBalanceExpected = Number(dwBalanceBefore) - Number(amount)- Number(fee);",
+									"    var dwBalanceExpected = Number(dwBalanceBefore) - Number(amount);",
 									"    ",
 									"    console.info(\"amount: \" + amount);",
-									"    console.info(\"fee: \" + fee);",
 									"    console.info(\"dwBalanceBefore: \" + dwBalanceBefore);    ",
 									"    console.info(\"dwBalanceCurrent: \" + dwBalanceCurrent);",
 									"    console.info(\"dwBalanceExpected: \" + dwBalanceExpected);",

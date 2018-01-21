@@ -7,7 +7,7 @@ using Lykke.SettingsReader;
 using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
 using Lykke.Service.Dash.Api.Core.Repositories;
 
-namespace Lykke.Service.Dash.Api.AzureRepositories.Transaction
+namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
 {
     public class BroadcastRepository : IBroadcastRepository
     {

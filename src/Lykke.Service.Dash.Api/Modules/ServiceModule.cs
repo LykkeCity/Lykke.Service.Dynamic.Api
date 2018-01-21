@@ -1,7 +1,6 @@
 ﻿using Autofac;
 using Common.Log;
 using Lykke.Service.Dash.Api.AzureRepositories.BroadcastInProgress;
-using Lykke.Service.Dash.Api.AzureRepositories.Transaction;
 using Lykke.Service.Dash.Api.Core.Services;
 using Lykke.Service.Dash.Api.Core.Repositories;
 using Lykke.Service.Dash.Api.Core.Settings.ServiceSettings;
@@ -10,6 +9,7 @@ using Lykke.SettingsReader;
 using Lykke.Service.Dash.Api.AzureRepositories.Balance;
 using Lykke.Service.Dash.Api.AzureRepositories.BalancePositive;
 using Lykke.Service.Dash.Api.PeriodicalHandlers;
+using Lykke.Service.Dash.Api.AzureRepositories.Broadcast;
 
 namespace Lykke.Service.Dash.Api.Modules
 {
@@ -60,7 +60,7 @@ namespace Lykke.Service.Dash.Api.Modules
             builder.RegisterType<BalancePositiveRepository>()
                 .As<IBalancePositiveRepository>()
                 .WithParameter(TypedParameter.From(connectionStringManager))
-                .SingleInstance();            
+                .SingleInstance();
 
             builder.RegisterType<DashInsightClient>()
                 .As<IDashInsightClient>()

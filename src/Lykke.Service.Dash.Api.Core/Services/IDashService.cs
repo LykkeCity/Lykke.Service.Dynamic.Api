@@ -13,8 +13,8 @@ namespace Lykke.Service.Dash.Api.Core.Services
 
         Transaction GetTransaction(string transactionHex);
 
-        Task<string> BuildTransactionAsync(BitcoinAddress fromAddress, BitcoinAddress toAddress, 
-            decimal amount, bool includeFee);
+        Task<string> BuildTransactionAsync(Guid operationId, BitcoinAddress fromAddress, 
+            BitcoinAddress toAddress, decimal amount, bool includeFee);
 
         Task BroadcastAsync(Transaction transaction, Guid operationId);
 

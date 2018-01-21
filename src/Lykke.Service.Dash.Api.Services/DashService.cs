@@ -12,6 +12,7 @@ using NBitcoin.Policy;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Lykke.Service.Dash.Api.Core.Domain.InsightClient;
 
 namespace Lykke.Service.Dash.Api.Services
 {
@@ -72,8 +73,8 @@ namespace Lykke.Service.Dash.Api.Services
             }
         }
 
-        public async Task<string> BuildTransactionAsync(BitcoinAddress fromAddress, BitcoinAddress toAddress,
-            decimal amount, bool includeFee)
+        public async Task<string> BuildTransactionAsync(Guid operationId, BitcoinAddress fromAddress, 
+            BitcoinAddress toAddress, decimal amount, bool includeFee)
         {
             var sendAmount = Money.FromUnit(amount, Asset.Dash.Unit);
 
@@ -114,15 +115,24 @@ namespace Lykke.Service.Dash.Api.Services
                 builder.AddCoins(coin);
             }
 
-            var fee = CalculateFee(builder);
+            var feeMoney = CalculateFee(builder);
 
             var tx = builder
-                .SendFees(fee)
+                .SendFees(feeMoney)
                 .BuildTransaction(false);
 
             var coins = builder.FindSpentCoins(tx);
 
             return Serializer.ToString((tx: tx, coins: coins));
+        }
+
+        private Money CalculateFee(TransactionBuilder txBuilder)
+        {
+            var fee = txBuilder.EstimateFees(_feeRate);
+            var min = Money.Satoshis(_dashApiSettings.MinFeeSatoshis);
+            var max = Money.Satoshis(_dashApiSettings.MaxFeeSatoshis);
+
+            return Money.Max(Money.Min(fee, max), min);
         }
 
         public async Task BroadcastAsync(Transaction transaction, Guid operationId)
@@ -133,8 +143,6 @@ namespace Lykke.Service.Dash.Api.Services
 
                 await _broadcastRepository.AddAsync(operationId, response.Txid);
                 await _broadcastInProgressRepository.AddAsync(operationId, response.Txid);
-
-                await RefreshBalances(transaction);
             }
             catch (Exception ex)
             {
@@ -163,14 +171,9 @@ namespace Lykke.Service.Dash.Api.Services
 
         public async Task UpdateBroadcasts()
         {
-            var completedBroadcasts = 0;
-
             var list = await _broadcastInProgressRepository.GetAllAsync();
             if (list == null || !list.Any())
             {
-                await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBroadcasts),
-                    "There are no in-progress broadcasts");
-
                 return;
             }
 
@@ -179,46 +182,44 @@ namespace Lykke.Service.Dash.Api.Services
                 var tx = await _dashInsightClient.GetTx(item.Hash);
                 if (tx != null && tx.Confirmations >= _dashApiSettings.MinConfirmations)
                 {
+                    await RefreshBalances(tx);
+
                     await _broadcastRepository.SaveAsCompletedAsync(item.OperationId, tx.GetAmount(), tx.Fees);
                     await _broadcastInProgressRepository.DeleteAsync(item.OperationId);
-
-                    completedBroadcasts++;
                 }
             }
+        }
 
-            await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBroadcasts),
-                $"{completedBroadcasts} completed broadcasts were found");
+        private async Task RefreshBalances(Tx tx)
+        {
+            foreach (var address in tx.GetAddresses())
+            {
+                var balance = await _balanceRepository.GetAsync(address);
+                if (balance != null)
+                {
+                    var amount = await RefreshAddressBalance(address);
+
+                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
+                        $"New balance of address={address} is {amount}");
+                }
+            }
         }
 
         public async Task UpdateBalances()
         {
-            var positiveBalances = 0;
-
             var balances = await _balanceRepository.GetAllAsync();
-            if (balances == null && !balances.Any())
-            {
-                await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBalances), 
-                    "There are no addresses to observe");
-
-                return;
-            }
 
             foreach (var balance in balances)
             {
                 var amount = await RefreshAddressBalance(balance.Address);
-                if (amount > 0)
-                {
-                    positiveBalances++;
-                }
             }
-
-            await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBalances),
-                $"{positiveBalances} addresses with positive balance were found");
         }
 
         public async Task<decimal> RefreshAddressBalance(string address)
         {
-            var balance = await _dashInsightClient.GetBalance(address);
+            var balanceSatoshis = await _dashInsightClient.GetBalanceSatoshis(address);
+            var balance = Money.Satoshis(balanceSatoshis).ToDecimal(Asset.Dash.Unit);
+
             if (balance > 0)
             {
                 await _balancePositiveRepository.SaveAsync(address, balance);
@@ -229,48 +230,6 @@ namespace Lykke.Service.Dash.Api.Services
             }
 
             return balance;
-        }
-
-        private async Task RefreshBalances(Transaction transaction)
-        {
-            try
-            {
-                var addresses = transaction.Inputs.Select(f => f.ScriptSig.GetSignerAddress(_network).ToString());
-
-                await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                    $"addresses={String.Join(",", addresses)}", $"Addresses to refresh");
-
-                foreach (var address in addresses)
-                {
-                    var balance = await _balanceRepository.GetAsync(address);
-                    if (balance != null)
-                    {
-                        var amountBefore = await _dashInsightClient.GetBalance(address);
-
-                        await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                            $"address={address}, amountBefore={amountBefore}", $"Balance before refresh");
-
-                        var amountAfter = await RefreshAddressBalance(address);
-
-                        await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                            $"address={address}, amountAfter={amountAfter}", $"Balance after refresh");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                    $"ex={ex.ToString()}", $"Failed to refresh balances after transaction broadcast");
-            }
-        }
-
-        private Money CalculateFee(TransactionBuilder txBuilder)
-        {
-            var fee = txBuilder.EstimateFees(_feeRate);
-            var min = Money.Satoshis(_dashApiSettings.MinFeeSatoshis);
-            var max = Money.Satoshis(_dashApiSettings.MaxFeeSatoshis);
-
-            return Money.Max(Money.Min(fee, max), min);
         }
     }
 }

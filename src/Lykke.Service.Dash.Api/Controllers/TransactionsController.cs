@@ -51,8 +51,8 @@ namespace Lykke.Service.Dash.Api.Controllers
 
             var amount = Conversions.CoinsFromContract(request.Amount, Asset.Dash.Accuracy);
 
-            var transactionContext = await _dashService.BuildTransactionAsync(fromAddress, toAddress, 
-                amount, request.IncludeFee);
+            var transactionContext = await _dashService.BuildTransactionAsync(request.OperationId, fromAddress, 
+                toAddress, amount, request.IncludeFee);
 
             return Ok(new BuildTransactionResponse()
             {
