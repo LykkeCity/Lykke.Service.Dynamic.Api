@@ -26,7 +26,6 @@ namespace Lykke.Service.Dash.Api.Services
         private readonly IBalancePositiveRepository _balancePositiveRepository;
         private readonly Network _network;
         private readonly DashApiSettings _dashApiSettings;
-        private readonly FeeRate _feeRate;
 
         public DashService(ILog log,
             IDashInsightClient dashInsightClient,
@@ -46,7 +45,6 @@ namespace Lykke.Service.Dash.Api.Services
             _balancePositiveRepository = balancePositiveRepository;
             _dashApiSettings = dashApiSettings;
             _network = Network.GetNetwork(_dashApiSettings.Network);
-            _feeRate = new FeeRate(_dashApiSettings.FeePerByteSatoshis * 1024);
         }
 
         public BitcoinAddress GetBitcoinAddress(string address)
@@ -58,7 +56,7 @@ namespace Lykke.Service.Dash.Api.Services
             catch
             {
                 return null;
-            }            
+            }
         }
 
         public Transaction GetTransaction(string transactionHex)
@@ -73,7 +71,7 @@ namespace Lykke.Service.Dash.Api.Services
             }
         }
 
-        public async Task<string> BuildTransactionAsync(Guid operationId, BitcoinAddress fromAddress, 
+        public async Task<string> BuildTransactionAsync(Guid operationId, BitcoinAddress fromAddress,
             BitcoinAddress toAddress, decimal amount, bool includeFee)
         {
             var sendAmount = Money.FromUnit(amount, Asset.Dash.Unit);
@@ -82,13 +80,6 @@ namespace Lykke.Service.Dash.Api.Services
             if (txsUnspent == null || !txsUnspent.Any())
             {
                 throw new Exception($"There are no assets in {nameof(fromAddress)} address");
-            }
-
-            var availableAmount = txsUnspent.Sum(f => f.Amount);
-            if (availableAmount < amount)
-            {
-                throw new Exception($"There are no enough assets in {nameof(fromAddress)} address: " +
-                    $"available={availableAmount}, required: {amount}");
             }
 
             var builder = new TransactionBuilder()
@@ -115,7 +106,7 @@ namespace Lykke.Service.Dash.Api.Services
                 builder.AddCoins(coin);
             }
 
-            var feeMoney = CalculateFee(builder);
+            var feeMoney = Money.FromUnit(_dashApiSettings.Fee, Asset.Dash.Unit);
 
             var tx = builder
                 .SendFees(feeMoney)
@@ -124,15 +115,6 @@ namespace Lykke.Service.Dash.Api.Services
             var coins = builder.FindSpentCoins(tx);
 
             return Serializer.ToString((tx: tx, coins: coins));
-        }
-
-        private Money CalculateFee(TransactionBuilder txBuilder)
-        {
-            var fee = txBuilder.EstimateFees(_feeRate);
-            var min = Money.Satoshis(_dashApiSettings.MinFeeSatoshis);
-            var max = Money.Satoshis(_dashApiSettings.MaxFeeSatoshis);
-
-            return Money.Max(Money.Min(fee, max), min);
         }
 
         public async Task BroadcastAsync(Transaction transaction, Guid operationId)
@@ -149,7 +131,7 @@ namespace Lykke.Service.Dash.Api.Services
                 await _log.WriteErrorAsync(nameof(DashService), nameof(BroadcastAsync),
                     $"transaction={transaction.ToString()}, operationId={operationId}", ex);
 
-                await _broadcastRepository.AddFailedAsync(operationId, transaction.GetHash().ToString(), 
+                await _broadcastRepository.AddFailedAsync(operationId, transaction.GetHash().ToString(),
                     ex.Message);
             }
         }
@@ -217,8 +199,7 @@ namespace Lykke.Service.Dash.Api.Services
 
         public async Task<decimal> RefreshAddressBalance(string address)
         {
-            var balanceSatoshis = await _dashInsightClient.GetBalanceSatoshis(address);
-            var balance = Money.Satoshis(balanceSatoshis).ToDecimal(Asset.Dash.Unit);
+            var balance = await GetAddressBalance(address);
 
             if (balance > 0)
             {
@@ -230,6 +211,19 @@ namespace Lykke.Service.Dash.Api.Services
             }
 
             return balance;
+        }
+
+        public async Task<decimal> GetAddressBalance(string address)
+        {
+            var balanceSatoshis = await _dashInsightClient.GetBalanceSatoshis(address);
+            var balance = Money.Satoshis(balanceSatoshis).ToDecimal(Asset.Dash.Unit);
+
+            return balance;
+        }
+
+        public decimal GetFee()
+        {
+            return _dashApiSettings.Fee;
         }
     }
 }

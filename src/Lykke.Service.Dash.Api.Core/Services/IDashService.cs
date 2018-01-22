@@ -1,8 +1,6 @@
-﻿using Lykke.Service.Dash.Api.Core.Domain.Balance;
-using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
+﻿using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
 using NBitcoin;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Lykke.Service.Dash.Api.Core.Services
@@ -27,5 +25,9 @@ namespace Lykke.Service.Dash.Api.Core.Services
         Task UpdateBalances();
 
         Task<decimal> RefreshAddressBalance(string address);
+
+        Task<decimal> GetAddressBalance(string address);
+
+        decimal GetFee();
     }
 }

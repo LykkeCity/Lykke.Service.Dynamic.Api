@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Http;
 using System;
 using Lykke.Service.Dash.Api.Helpers;
 using Lykke.Service.Dash.Api.Core.Domain;
+using Common.Log;
+using Common;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
@@ -18,7 +20,7 @@ namespace Lykke.Service.Dash.Api.Controllers
     {
         private readonly IDashService _dashService;
 
-        public TransactionsController(IDashService dashService)
+        public TransactionsController(ILog log, IDashService dashService)
         {
             _dashService = dashService;
         }
@@ -50,6 +52,13 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             var amount = Conversions.CoinsFromContract(request.Amount, Asset.Dash.Accuracy);
+            var fromAddressBalance = await _dashService.GetAddressBalance(request.FromAddress);
+            var requiredBalance = request.IncludeFee ? amount : amount + _dashService.GetFee();
+
+            if (amount > fromAddressBalance || requiredBalance > fromAddressBalance)
+            {
+                return new StatusCodeResult(StatusCodes.Status406NotAcceptable);
+            }
 
             var transactionContext = await _dashService.BuildTransactionAsync(request.OperationId, fromAddress, 
                 toAddress, amount, request.IncludeFee);
