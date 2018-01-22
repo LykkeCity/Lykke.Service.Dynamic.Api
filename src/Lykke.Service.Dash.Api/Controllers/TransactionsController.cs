@@ -53,11 +53,19 @@ namespace Lykke.Service.Dash.Api.Controllers
 
             var amount = Conversions.CoinsFromContract(request.Amount, Asset.Dash.Accuracy);
             var fromAddressBalance = await _dashService.GetAddressBalance(request.FromAddress);
-            var requiredBalance = request.IncludeFee ? amount : amount + _dashService.GetFee();
+            var fee = _dashService.GetFee();
+            var requiredBalance = request.IncludeFee ? amount : amount + fee;
 
-            if (amount > fromAddressBalance || requiredBalance > fromAddressBalance)
+            if (amount < fee)
             {
-                return new StatusCodeResult(StatusCodes.Status406NotAcceptable);
+                return StatusCode(StatusCodes.Status406NotAcceptable,
+                    ErrorResponse.Create($"{nameof(amount)}={amount} can not be less then {fee}"));
+            }
+            if (requiredBalance > fromAddressBalance)
+            {
+                return StatusCode(StatusCodes.Status406NotAcceptable,
+                    ErrorResponse.Create($"There no enough funds on {nameof(request.FromAddress)}. " +
+                    $"Required Balance={requiredBalance}. Available balance={fromAddressBalance}"));
             }
 
             var transactionContext = await _dashService.BuildTransactionAsync(request.OperationId, fromAddress, 
