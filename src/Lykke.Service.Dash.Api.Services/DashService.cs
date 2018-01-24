@@ -114,21 +114,33 @@ namespace Lykke.Service.Dash.Api.Services
 
         public async Task BroadcastAsync(Transaction transaction, Guid operationId)
         {
+            TxBroadcast response;
+
             try
             {
-                var response = await _dashInsightClient.BroadcastTxAsync(transaction.ToHex());
+                response = await _dashInsightClient.BroadcastTxAsync(transaction.ToHex());
 
-                await _broadcastRepository.AddAsync(operationId, response.Txid);
-                await _broadcastInProgressRepository.AddAsync(operationId, response.Txid);
+                if (response == null)
+                {
+                    throw new ArgumentException($"{nameof(response)} can not be null");
+                }
+                if (string.IsNullOrEmpty(response.Txid))
+                {
+                    throw new ArgumentException($"{nameof(response)}{nameof(response.Txid)} can not be null or empty");
+                }
             }
             catch (Exception ex)
             {
                 await _log.WriteErrorAsync(nameof(DashService), nameof(BroadcastAsync),
                     $"transaction={transaction.ToString()}, operationId={operationId}", ex);
-
                 await _broadcastRepository.AddFailedAsync(operationId, transaction.GetHash().ToString(),
                     ex.ToString());
+
+                return;
             }
+
+            await _broadcastRepository.AddAsync(operationId, response.Txid);
+            await _broadcastInProgressRepository.AddAsync(operationId, response.Txid);
         }
 
         public async Task<IBroadcast> GetBroadcastAsync(Guid operationId)
