@@ -75,12 +75,7 @@ namespace Lykke.Service.Dash.Api.Services
             BitcoinAddress toAddress, decimal amount, bool includeFee)
         {
             var sendAmount = Money.FromUnit(amount, Asset.Dash.Unit);
-
             var txsUnspent = await _dashInsightClient.GetTxsUnspentAsync(fromAddress.ToString());
-            if (txsUnspent == null || !txsUnspent.Any())
-            {
-                throw new Exception($"There are no assets in {nameof(fromAddress)} address");
-            }
 
             var builder = new TransactionBuilder()
                 .Send(toAddress, sendAmount)
@@ -132,7 +127,7 @@ namespace Lykke.Service.Dash.Api.Services
                     $"transaction={transaction.ToString()}, operationId={operationId}", ex);
 
                 await _broadcastRepository.AddFailedAsync(operationId, transaction.GetHash().ToString(),
-                    ex.Message);
+                    ex.ToString());
             }
         }
 
@@ -154,10 +149,6 @@ namespace Lykke.Service.Dash.Api.Services
         public async Task UpdateBroadcasts()
         {
             var list = await _broadcastInProgressRepository.GetAllAsync();
-            if (list == null || !list.Any())
-            {
-                return;
-            }
 
             foreach (var item in list)
             {
@@ -193,7 +184,7 @@ namespace Lykke.Service.Dash.Api.Services
 
             foreach (var balance in balances)
             {
-                var amount = await RefreshAddressBalance(balance.Address);
+                await RefreshAddressBalance(balance.Address);
             }
         }
 
