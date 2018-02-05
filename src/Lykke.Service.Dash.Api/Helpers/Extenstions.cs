@@ -60,7 +60,8 @@ namespace Lykke.Service.Dash.Api.Helpers
             {
                 Address = self.Address,
                 AssetId = Asset.Dash.Id,
-                Balance = Conversions.CoinsToContract(self.Amount, Asset.Dash.Accuracy)
+                Balance = Conversions.CoinsToContract(self.Amount, Asset.Dash.Accuracy),
+                Block = self.Block
             };
         }
     }

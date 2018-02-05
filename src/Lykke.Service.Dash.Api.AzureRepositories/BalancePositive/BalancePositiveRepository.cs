@@ -20,6 +20,11 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.BalancePositive
             _table = AzureTableStorage<BalancePositiveEntity>.Create(connectionStringManager, "BalancesPositive", log);
         }
 
+        public async Task<IBalancePositive> GetAsync(string address)
+        {
+            return await _table.GetDataAsync(GetPartitionKey(), GetRowKey(address));
+        }
+
         public async Task<(IEnumerable<IBalancePositive> Items, string Continuation)> GetAsync(int take, string continuation)
         {
             var result = await _table.GetDataWithContinuationTokenAsync(GetPartitionKey(), take, continuation);
@@ -27,13 +32,14 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.BalancePositive
             return (result.Entities, result.ContinuationToken);
         }
 
-        public async Task SaveAsync(string address, decimal amount)
+        public async Task SaveAsync(string address, decimal amount, long block)
         {
             await _table.InsertOrReplaceAsync(new BalancePositiveEntity
             {
                 PartitionKey = GetPartitionKey(),
                 RowKey = GetRowKey(address),
-                Amount = amount
+                Amount = amount,
+                Block = block
             });
         }
 

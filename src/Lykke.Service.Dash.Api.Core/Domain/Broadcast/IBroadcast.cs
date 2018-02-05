@@ -9,6 +9,7 @@ namespace Lykke.Service.Dash.Api.Core.Domain.Broadcast
         string Hash { get; }
         decimal? Amount { get; }
         decimal? Fee { get; }
+        long Block { get; }
         string Error { get; }
         DateTime? BroadcastedUtc { get; }
         DateTime? CompletedUtc { get; }

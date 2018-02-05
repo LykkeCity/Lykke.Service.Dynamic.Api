@@ -4,5 +4,6 @@
     {
         string Address { get; }
         decimal Amount { get; }
+        long Block { get; }
     }
 }

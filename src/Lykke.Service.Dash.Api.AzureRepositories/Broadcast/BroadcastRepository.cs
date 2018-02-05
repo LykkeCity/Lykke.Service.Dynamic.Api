@@ -25,7 +25,7 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
             return await _table.GetDataAsync(GetPartitionKey(), GetRowKey(operationId));
         }
 
-        public async Task AddAsync(Guid operationId, string hash)
+        public async Task AddAsync(Guid operationId, string hash, long block)
         {
             await _table.InsertOrReplaceAsync(new BroadcastEntity
             {
@@ -33,11 +33,12 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
                 RowKey = GetRowKey(operationId),
                 BroadcastedUtc = DateTime.UtcNow,
                 State = BroadcastState.Broadcasted,
-                Hash = hash
+                Hash = hash,
+                Block = block
             });
         }
 
-        public async Task AddFailedAsync(Guid operationId, string hash, string error)
+        public async Task AddFailedAsync(Guid operationId, string hash, string error, long block)
         {
             await _table.InsertOrReplaceAsync(new BroadcastEntity
             {
@@ -46,11 +47,12 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
                 FailedUtc = DateTime.UtcNow,
                 State = BroadcastState.Failed,
                 Hash = hash,
-                Error = error
+                Error = error,
+                Block = block
             });
         }
 
-        public async Task SaveAsCompletedAsync(Guid operationId, decimal amount, decimal fee)
+        public async Task SaveAsCompletedAsync(Guid operationId, decimal amount, decimal fee, long block)
         {
             await _table.ReplaceAsync(GetPartitionKey(), GetRowKey(operationId), x =>
             {
@@ -58,6 +60,7 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
                 x.CompletedUtc = DateTime.UtcNow;
                 x.Amount = amount;
                 x.Fee = fee;
+                x.Block = block;
 
                 return x;
             });

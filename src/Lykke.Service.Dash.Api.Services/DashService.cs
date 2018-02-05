@@ -5,14 +5,13 @@ using Lykke.Service.Dash.Api.Core.Services;
 using Lykke.Service.Dash.Api.Core.Repositories;
 using Lykke.Service.Dash.Api.Core.Settings.ServiceSettings;
 using Lykke.Service.Dash.Api.Services.Helpers;
+using Lykke.Service.Dash.Api.Core.Domain.InsightClient;
 using NBitcoin;
 using NBitcoin.Dash;
 using NBitcoin.JsonConverters;
 using NBitcoin.Policy;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using Lykke.Service.Dash.Api.Core.Domain.InsightClient;
 
 namespace Lykke.Service.Dash.Api.Services
 {
@@ -116,6 +115,8 @@ namespace Lykke.Service.Dash.Api.Services
         {
             TxBroadcast response;
 
+            var block = await _dashInsightClient.GetLatestBlockHeight();
+
             try
             {
                 response = await _dashInsightClient.BroadcastTxAsync(transaction.ToHex());
@@ -134,12 +135,12 @@ namespace Lykke.Service.Dash.Api.Services
                 await _log.WriteErrorAsync(nameof(DashService), nameof(BroadcastAsync),
                     $"transaction={transaction.ToString()}, operationId={operationId}", ex);
                 await _broadcastRepository.AddFailedAsync(operationId, transaction.GetHash().ToString(),
-                    ex.ToString());
+                    ex.ToString(), block);
 
                 return;
             }
 
-            await _broadcastRepository.AddAsync(operationId, response.Txid);
+            await _broadcastRepository.AddAsync(operationId, response.Txid, block);
             await _broadcastInProgressRepository.AddAsync(operationId, response.Txid);
         }
 
@@ -169,7 +170,8 @@ namespace Lykke.Service.Dash.Api.Services
                 {
                     await RefreshBalances(tx);
 
-                    await _broadcastRepository.SaveAsCompletedAsync(item.OperationId, tx.GetAmount(), tx.Fees);
+                    await _broadcastRepository.SaveAsCompletedAsync(item.OperationId, tx.GetAmount(), 
+                        tx.Fees, tx.BlockHeight);
                     await _broadcastInProgressRepository.DeleteAsync(item.OperationId);
                 }
             }
@@ -182,7 +184,7 @@ namespace Lykke.Service.Dash.Api.Services
                 var balance = await _balanceRepository.GetAsync(address);
                 if (balance != null)
                 {
-                    var amount = await RefreshAddressBalance(address);
+                    var amount = await RefreshAddressBalance(address, tx.BlockHeight);
 
                     await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
                         $"New balance of address={address} is {amount}");
@@ -200,13 +202,24 @@ namespace Lykke.Service.Dash.Api.Services
             }
         }
 
-        public async Task<decimal> RefreshAddressBalance(string address)
+        public async Task<decimal> RefreshAddressBalance(string address, long? block = null)
         {
             var balance = await GetAddressBalance(address);
 
             if (balance > 0)
             {
-                await _balancePositiveRepository.SaveAsync(address, balance);
+                var balancePositive = await _balancePositiveRepository.GetAsync(address);
+                if (balancePositive != null && balancePositive.Amount == balance)
+                {
+                    return balance;
+                }
+
+                if (!block.HasValue)
+                {
+                    block = await _dashInsightClient.GetLatestBlockHeight();
+                }
+
+                await _balancePositiveRepository.SaveAsync(address, balance, block.Value);
             }
             else
             {
@@ -223,6 +236,7 @@ namespace Lykke.Service.Dash.Api.Services
 
             return balance;
         }
+
 
         public decimal GetFee()
         {

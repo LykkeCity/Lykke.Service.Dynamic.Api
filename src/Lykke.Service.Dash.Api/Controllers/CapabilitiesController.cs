@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Lykke.Service.BlockchainApi.Contract.Common;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
@@ -6,15 +7,14 @@ namespace Lykke.Service.Dash.Api.Controllers
     public class CapabilitiesController : Controller
     {
         [HttpGet]
-        public IActionResult Get()
+        public CapabilitiesResponse Get()
         {
-            var capabilities = new
+            return new CapabilitiesResponse()
             {
-                isTransactionsRebuildingSupported = false,
-                isBatchedTransactionsSupported = false
+                AreManyInputsSupported = true,
+                AreManyOutputsSupported = true,
+                IsTransactionsRebuildingSupported = false
             };
-
-            return Ok(capabilities);
         }
     }
 }

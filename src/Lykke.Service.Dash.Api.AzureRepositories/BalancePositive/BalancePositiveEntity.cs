@@ -14,5 +14,7 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.BalancePositive
         }
 
         public decimal Amount { get; set; }
+
+        public long Block { get; set; }
     }
 }

@@ -24,7 +24,7 @@ namespace Lykke.Service.Dash.Api.Core.Services
 
         Task UpdateBalances();
 
-        Task<decimal> RefreshAddressBalance(string address);
+        Task<decimal> RefreshAddressBalance(string address, long? block = null);
 
         Task<decimal> GetAddressBalance(string address);
 

@@ -34,7 +34,30 @@ namespace Lykke.Service.Dash.Api.Services
             }
             catch (Exception ex)
             {
-                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(GetTxsUnspentAsync),
+                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(GetBalanceSatoshis),
+                    $"Failed to get value for url='{url}'", ex);
+
+                throw;
+            }
+        }
+
+        public async Task<long> GetLatestBlockHeight()
+        {
+            var url = $"{_url}/blocks?limit=1";
+
+            try
+            {
+                var response = await GetJson<Blocks>(url);
+
+                return response.Items[0].Height;
+            }
+            catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(GetLatestBlockHeight),
                     $"Failed to get json for url='{url}'", ex);
 
                 throw;

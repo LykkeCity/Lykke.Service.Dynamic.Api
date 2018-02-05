@@ -22,6 +22,8 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
 
         public decimal? Fee { get; set; }
 
+        public long Block { get; set; }
+
         public string Error { get; set; }
 
         public DateTime? BroadcastedUtc { get; set; }

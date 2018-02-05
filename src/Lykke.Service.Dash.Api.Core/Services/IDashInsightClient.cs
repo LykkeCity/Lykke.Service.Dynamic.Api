@@ -7,6 +7,8 @@ namespace Lykke.Service.Dash.Api.Core.Services
     {
         Task<ulong> GetBalanceSatoshis(string address);
 
+        Task<long> GetLatestBlockHeight();
+
         Task<Tx> GetTx(string txid);
 
         Task<TxUnspent[]> GetTxsUnspentAsync(string address);

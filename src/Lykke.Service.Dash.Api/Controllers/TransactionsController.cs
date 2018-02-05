@@ -11,7 +11,6 @@ using System;
 using Lykke.Service.Dash.Api.Helpers;
 using Lykke.Service.Dash.Api.Core.Domain;
 using Common.Log;
-using Common;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
@@ -25,9 +24,9 @@ namespace Lykke.Service.Dash.Api.Controllers
             _dashService = dashService;
         }
 
-        [HttpPost]
+        [HttpPost("single")]
         [ProducesResponseType(typeof(BuildTransactionResponse), (int)HttpStatusCode.OK)]
-        public async Task<IActionResult> Build([Required, FromBody] BuildTransactionRequest request)
+        public async Task<IActionResult> Build([Required, FromBody] BuildSingleTransactionRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -58,14 +57,17 @@ namespace Lykke.Service.Dash.Api.Controllers
 
             if (amount < fee)
             {
-                return StatusCode(StatusCodes.Status406NotAcceptable,
-                    ErrorResponse.Create($"{nameof(amount)}={amount} can not be less then {fee}"));
+                return Ok(new BuildTransactionResponse()
+                {
+                    ErrorCode = TransactionExecutionError.AmountIsTooSmall
+                });
             }
             if (requiredBalance > fromAddressBalance)
             {
-                return StatusCode(StatusCodes.Status406NotAcceptable,
-                    ErrorResponse.Create($"There no enough funds on {nameof(request.FromAddress)}. " +
-                    $"Required Balance={requiredBalance}. Available balance={fromAddressBalance}"));
+                return Ok(new BuildTransactionResponse()
+                {
+                    ErrorCode = TransactionExecutionError.NotEnoughtBalance
+                });
             }
 
             var transactionContext = await _dashService.BuildTransactionAsync(request.OperationId, fromAddress, 
@@ -85,6 +87,7 @@ namespace Lykke.Service.Dash.Api.Controllers
         }
 
         [HttpPost("broadcast")]
+        [ProducesResponseType(typeof(BroadcastTransactionResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Broadcast([Required, FromBody] BroadcastTransactionRequest request)
         {
             if (!ModelState.IsValid)
@@ -106,7 +109,7 @@ namespace Lykke.Service.Dash.Api.Controllers
 
             await _dashService.BroadcastAsync(transaction, request.OperationId);
 
-            return Ok();
+            return Ok(new BroadcastTransactionResponse());
         }
 
         [HttpPost("broadcast/batched")]
@@ -116,14 +119,14 @@ namespace Lykke.Service.Dash.Api.Controllers
             return new StatusCodeResult(StatusCodes.Status501NotImplemented);
         }
 
-        [HttpGet("broadcast/{operationId}")]
-        [ProducesResponseType(typeof(BroadcastedTransactionResponse), StatusCodes.Status200OK)]
+        [HttpGet("broadcast/single/{operationId}")]
+        [ProducesResponseType(typeof(BroadcastedSingleTransactionResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetBroadcast([Required] Guid operationId)
         {
             var broadcast = await _dashService.GetBroadcastAsync(operationId);
             if (broadcast == null)
             {
-                return new StatusCodeResult(StatusCodes.Status204NoContent);
+                return NoContent();
             }
 
             var amount = broadcast.Amount.HasValue ?
@@ -132,7 +135,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             var fee = broadcast.Fee.HasValue ?
                 Conversions.CoinsToContract(broadcast.Fee.Value, Asset.Dash.Accuracy) : "";
 
-            return Ok(new BroadcastedTransactionResponse
+            return Ok(new BroadcastedSingleTransactionResponse
             {
                 OperationId = broadcast.OperationId,
                 Hash = broadcast.Hash,
@@ -141,6 +144,7 @@ namespace Lykke.Service.Dash.Api.Controllers
                 Fee = fee,
                 Error = broadcast.Error,
                 Timestamp = broadcast.GetTimestamp(),
+                Block = broadcast.Block
             });
         }
 
@@ -150,7 +154,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             var broadcast = await _dashService.GetBroadcastAsync(operationId);
             if (broadcast == null)
             {
-                return new StatusCodeResult(StatusCodes.Status204NoContent);
+                return NoContent();
             }
 
             await _dashService.DeleteBroadcastAsync(broadcast);
