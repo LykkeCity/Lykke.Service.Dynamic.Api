@@ -47,9 +47,9 @@ namespace Lykke.Service.Dash.Api.Services
 
             try
             {
-                var response = await GetJson<Blocks>(url);
+                var response = await GetJson<BlocksInfo>(url);
 
-                return response.Items[0].Height;
+                return response.Blocks[0].Height;
             }
             catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
             {

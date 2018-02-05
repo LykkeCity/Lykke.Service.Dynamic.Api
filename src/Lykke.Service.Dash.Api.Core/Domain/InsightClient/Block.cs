@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Lykke.Service.Dash.Api.Core.Domain.InsightClient
+﻿namespace Lykke.Service.Dash.Api.Core.Domain.InsightClient
 {
-    public class Blocks
+    public class BlocksInfo
     {
-        public Block[] Items { get; set; }
+        public Block[] Blocks { get; set; }
     }
 
     public class Block
