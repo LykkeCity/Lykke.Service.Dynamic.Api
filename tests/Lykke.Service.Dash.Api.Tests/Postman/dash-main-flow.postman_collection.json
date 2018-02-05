@@ -195,7 +195,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "31d47ece-691d-4a5a-9c89-d8bbe55d1ad1",
+								"id": "60a60c3a-0a52-4c0c-ae5a-026c05380f12",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -209,7 +209,8 @@
 									"    ",
 									"    for (var item of jsonData.items) { ",
 									"        if(item.address === dwAddress) {",
-									"            console.info(\"Balance found: \" + item.balance);",
+									"            console.info(\"Balance: \" + item.balance);",
+									"            console.info(\"Block: \" + item.block);",
 									"            ",
 									"            pm.environment.set(\"dwBalance\", item.balance);",
 									"        }",
@@ -311,13 +312,14 @@
 							"raw": "{\r\n  \"operationId\": \"{{operationId}}\",\r\n  \"fromAddress\": \"{{dw-address}}\",\r\n  \"toAddress\": \"{{hw-address}}\",\r\n  \"assetId\": \"{{asset-id}}\",\r\n  \"amount\": {{amount}},\r\n  \"includeFee\": true\r\n}"
 						},
 						"url": {
-							"raw": "{{domain-api}}/api/transactions",
+							"raw": "{{domain-api}}/api/transactions/single",
 							"host": [
 								"{{domain-api}}"
 							],
 							"path": [
 								"api",
-								"transactions"
+								"transactions",
+								"single"
 							]
 						},
 						"description": ""
@@ -443,7 +445,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "9c6ca619-7af2-40f0-8c2b-b59a760fbd7b",
+								"id": "595b814f-5534-4bf2-a4a3-d1cc07544990",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -455,7 +457,7 @@
 									"var expected = \"completed\";",
 									"",
 									"if(current == expected){",
-									"    console.info(\"Transaction completed with fee=\" + jsonData.fee);",
+									"    console.info(\"Transaction completed with fee=\" + jsonData.fee + \" in block=\" + jsonData.block);",
 									"} else {",
 									"    console.info(\"current state:\" + current);",
 									"    console.info(\"Wait 60 secs\");",
@@ -483,7 +485,7 @@
 							"raw": "{\r\n  \"email\": \"andrey.krivoshapov@lykke.com\"\r\n}"
 						},
 						"url": {
-							"raw": "{{domain-api}}/api/transactions/broadcast/{{operationId}}",
+							"raw": "{{domain-api}}/api/transactions/broadcast/single/{{operationId}}",
 							"host": [
 								"{{domain-api}}"
 							],
@@ -491,6 +493,7 @@
 								"api",
 								"transactions",
 								"broadcast",
+								"single",
 								"{{operationId}}"
 							]
 						}
@@ -585,7 +588,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "56eac54a-e00f-400c-8772-64fc3e37378e",
+								"id": "5cdf9774-906a-4ca2-a224-a19e6fe01b9d",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -599,7 +602,8 @@
 									"    ",
 									"    for (var item of jsonData.items) { ",
 									"        if(item.address === dwAddress) {",
-									"            console.info(\"DW Balance: \" + item.balance);",
+									"            console.info(\"Balance: \" + item.balance);",
+									"            console.info(\"Block: \" + item.block);",
 									"            ",
 									"            pm.environment.set(\"dwBalance\", item.balance);",
 									"        }",
@@ -701,13 +705,14 @@
 							"raw": "{\r\n  \"operationId\": \"{{operationId}}\",\r\n  \"fromAddress\": \"{{hw-address}}\",\r\n  \"toAddress\": \"{{dw-address}}\",\r\n  \"assetId\": \"{{asset-id}}\",\r\n  \"amount\": {{amount}},\r\n  \"includeFee\": false\r\n}"
 						},
 						"url": {
-							"raw": "{{domain-api}}/api/transactions",
+							"raw": "{{domain-api}}/api/transactions/single",
 							"host": [
 								"{{domain-api}}"
 							],
 							"path": [
 								"api",
-								"transactions"
+								"transactions",
+								"single"
 							]
 						},
 						"description": ""
@@ -833,7 +838,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "bb81f909-8244-44ed-ac09-23dd1e7596ea",
+								"id": "8761d56a-e738-4878-91e0-84e1842a812d",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -845,7 +850,7 @@
 									"var expected = \"completed\";",
 									"",
 									"if(current == expected){",
-									"    console.info(\"Transaction completed with fee=\" + jsonData.fee);",
+									"    console.info(\"Transaction completed with fee=\" + jsonData.fee + \" in block=\" + jsonData.block);",
 									"    ",
 									"    pm.test(\"Check fee\", function () {",
 									"        var amount = pm.environment.get(\"amount\");",
@@ -882,7 +887,7 @@
 							"raw": "{\r\n  \"email\": \"andrey.krivoshapov@lykke.com\"\r\n}"
 						},
 						"url": {
-							"raw": "{{domain-api}}/api/transactions/broadcast/{{operationId}}",
+							"raw": "{{domain-api}}/api/transactions/broadcast/single/{{operationId}}",
 							"host": [
 								"{{domain-api}}"
 							],
@@ -890,6 +895,7 @@
 								"api",
 								"transactions",
 								"broadcast",
+								"single",
 								"{{operationId}}"
 							]
 						}
@@ -902,7 +908,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "d3e878f3-2807-4ca0-9237-0d192d680a19",
+								"id": "ceef8a04-fdc1-4c80-a45b-11b7d2b8c0d1",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -914,10 +920,12 @@
 									"",
 									"    var dwAddress = pm.environment.get(\"dw-address\")",
 									"    var dwBalanceCurrent;",
+									"    var dwBlockCurrent;",
 									"    ",
 									"    for (var item of jsonData.items) { ",
 									"        if(item.address === dwAddress) {",
 									"            dwBalanceCurrent = Number(item.balance);",
+									"            dwBlockCurrent = item.block;",
 									"        }",
 									"    }",
 									"    ",
@@ -929,6 +937,7 @@
 									"    console.info(\"dwBalanceBefore: \" + dwBalanceBefore);    ",
 									"    console.info(\"dwBalanceCurrent: \" + dwBalanceCurrent);",
 									"    console.info(\"dwBalanceExpected: \" + dwBalanceExpected);",
+									"    console.info(\"dwBlockCurrent: \" + dwBlockCurrent);",
 									"",
 									"    pm.expect(dwBalanceExpected).to.eql(dwBalanceCurrent);",
 									"});"
