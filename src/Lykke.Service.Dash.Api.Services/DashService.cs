@@ -12,6 +12,7 @@ using NBitcoin.JsonConverters;
 using NBitcoin.Policy;
 using System;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Lykke.Service.Dash.Api.Services
 {
@@ -231,12 +232,13 @@ namespace Lykke.Service.Dash.Api.Services
 
         public async Task<decimal> GetAddressBalance(string address)
         {
-            var balanceSatoshis = await _dashInsightClient.GetBalanceSatoshis(address);
-            var balance = Money.Satoshis(balanceSatoshis).ToDecimal(Asset.Dash.Unit);
+            var utxos = await _dashInsightClient.GetTxsUnspentAsync(address);
+            var balance = utxos
+                .Where(f => f.Confirmations >= _dashApiSettings.MinConfirmations)
+                .Sum(f => f.Amount);
 
             return balance;
         }
-
 
         public decimal GetFee()
         {
