@@ -253,7 +253,7 @@
 					"response": []
 				},
 				{
-					"name": "/api/transactions - build transaction",
+					"name": "/api/transactions/single - build transaction",
 					"event": [
 						{
 							"listen": "prerequest",
@@ -310,6 +310,70 @@
 						"body": {
 							"mode": "raw",
 							"raw": "{\r\n  \"operationId\": \"{{operationId}}\",\r\n  \"fromAddress\": \"{{dw-address}}\",\r\n  \"toAddress\": \"{{hw-address}}\",\r\n  \"assetId\": \"{{asset-id}}\",\r\n  \"amount\": {{amount}},\r\n  \"includeFee\": true\r\n}"
+						},
+						"url": {
+							"raw": "{{domain-api}}/api/transactions/single",
+							"host": [
+								"{{domain-api}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"single"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/api/transactions/single - build transaction again",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "b0a8c2b0-8534-4a89-a404-92494192378f",
+								"type": "text/javascript",
+								"exec": [
+									""
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "e952d7d3-1d98-42c5-abef-16f075adb72a",
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Check transactionContext\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var expected = pm.environment.get(\"transactionContext\");",
+									"    var current = jsonData.transactionContext;",
+									"    ",
+									"    console.info(\"expected: \" + expected);",
+									"    console.info(\"current: \" + current);",
+									"    ",
+									"    pm.expect(expected).to.eql(current);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"operationId\": \"{{operationId}}\",\r\n  \"fromAddress\": \"{{dw-address}}\",\r\n  \"toAddress\": \"{{hw-address}}\",\r\n  \"assetId\": \"{{asset-id}}\",\r\n  \"amount\": {{amount}},\r\n  \"includeFee\": false\r\n}"
 						},
 						"url": {
 							"raw": "{{domain-api}}/api/transactions/single",
@@ -440,12 +504,12 @@
 					"response": []
 				},
 				{
-					"name": "/api/transactions/broadcast/{operationId} - wait transaction completion",
+					"name": "/api/transactions/broadcast/single/{operationId} - wait transaction completion",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"id": "595b814f-5534-4bf2-a4a3-d1cc07544990",
+								"id": "1250e3f7-fe49-46c5-8114-81ffd6d7313d",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -462,7 +526,7 @@
 									"    console.info(\"current state:\" + current);",
 									"    console.info(\"Wait 60 secs\");",
 									"    setTimeout(function(){}, 60000);",
-									"    postman.setNextRequest(\"/api/transactions/broadcast/{operationId} - wait transaction completion\");",
+									"    postman.setNextRequest(\"/api/transactions/broadcast/single/{operationId} - wait transaction completion\");",
 									"}"
 								]
 							}
@@ -575,6 +639,53 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "/api/transactions/broadcast/{operationId} - delete operation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "415ed145-c923-4424-8fcd-e5e6971a0f2c",
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "adminAuthToken",
+								"value": "{{admin_auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{domain-api}}/api/transactions/broadcast/{{operationId}}",
+							"host": [
+								"{{domain-api}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"broadcast",
+								"{{operationId}}"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -646,7 +757,7 @@
 					"response": []
 				},
 				{
-					"name": "/api/transactions - build transaction",
+					"name": "/api/transactions/single - build transaction",
 					"event": [
 						{
 							"listen": "prerequest",
@@ -833,12 +944,12 @@
 					"response": []
 				},
 				{
-					"name": "/api/transactions/broadcast/{operationId} - wait hw transaction completion",
+					"name": "/api/transactions/broadcast/single/{operationId} - wait hw transaction completion",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"id": "8761d56a-e738-4878-91e0-84e1842a812d",
+								"id": "0b7c2b71-327e-453e-a434-ec63cdd0b709",
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
@@ -864,7 +975,7 @@
 									"    console.info(\"current state:\" + current);",
 									"    console.info(\"Wait 60 secs\");",
 									"    setTimeout(function(){}, 60000);",
-									"    postman.setNextRequest(\"/api/transactions/broadcast/{operationId} - wait hw transaction completion\");",
+									"    postman.setNextRequest(\"/api/transactions/broadcast/single/{operationId} - wait hw transaction completion\");",
 									"}"
 								]
 							}
@@ -976,6 +1087,53 @@
 									"value": "500",
 									"equals": true
 								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/transactions/broadcast/{operationId} - delete operation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "415ed145-c923-4424-8fcd-e5e6971a0f2c",
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "adminAuthToken",
+								"value": "{{admin_auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{domain-api}}/api/transactions/broadcast/{{operationId}}",
+							"host": [
+								"{{domain-api}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"broadcast",
+								"{{operationId}}"
 							]
 						}
 					},
