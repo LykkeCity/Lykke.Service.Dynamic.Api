@@ -179,17 +179,17 @@ namespace Lykke.Service.Dash.Api.Controllers
             return Ok();
         }
 
-        //[HttpPost("history/from/{address}/observation")]
+        [HttpPost("history/from/{address}/observation")]
         //[ProducesResponseType(typeof(BroadcastedTransactionResponse), StatusCodes.Status200OK)]
-        //public async Task<IActionResult> AddObservationFromAddress([Required] string address)
-        //{
-        //    var dashAddress = _dashService.GetBitcoinAddress(address);
-        //    if (dashAddress == null)
-        //    {
-        //        return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
-        //    }
+        public async Task<IActionResult> AddObservationFromAddress([Required] string address)
+        {
+            var dashAddress = _dashService.GetBitcoinAddress(address);
+            if (dashAddress == null)
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
+            }
 
-        //    return Ok();
-        //}
+            return Ok();
+        }
     }
 }
