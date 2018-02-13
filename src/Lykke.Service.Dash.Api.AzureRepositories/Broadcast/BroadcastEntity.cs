@@ -7,7 +7,7 @@ using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
 namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
 {
     [ValueTypeMergingStrategy(ValueTypeMergingStrategy.UpdateAlways)]
-    public class BroadcastEntity : AzureTableEntity, IBroadcast
+    internal class BroadcastEntity : AzureTableEntity, IBroadcast
     {
         public Guid OperationId
         {

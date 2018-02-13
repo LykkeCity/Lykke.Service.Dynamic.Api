@@ -11,6 +11,7 @@ using System;
 using Lykke.Service.Dash.Api.Helpers;
 using Lykke.Service.Dash.Api.Core.Domain;
 using Common.Log;
+using Lykke.Service.Dash.Api.Core.Repositories;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
@@ -18,10 +19,14 @@ namespace Lykke.Service.Dash.Api.Controllers
     public class TransactionsController : Controller
     {
         private readonly IDashService _dashService;
+        private readonly IBuildRepository _buildRepository;
 
-        public TransactionsController(ILog log, IDashService dashService)
+        public TransactionsController(ILog log, 
+            IDashService dashService,
+            IBuildRepository buildRepository)
         {
             _dashService = dashService;
+            _buildRepository = buildRepository;
         }
 
         [HttpPost("single")]
@@ -50,6 +55,15 @@ namespace Lykke.Service.Dash.Api.Controllers
                 return BadRequest(ErrorResponse.Create($"{nameof(request.AssetId)} was not found"));
             }
 
+            var build = await _buildRepository.GetAsync(request.OperationId);
+            if (build != null)
+            {
+                return Ok(new BuildTransactionResponse()
+                {
+                    TransactionContext = build.TransactionContext
+                });
+            }
+
             var amount = Conversions.CoinsFromContract(request.Amount, Asset.Dash.Accuracy);
             var fromAddressBalance = await _dashService.GetAddressBalance(request.FromAddress);
             var fee = _dashService.GetFee();
@@ -72,6 +86,8 @@ namespace Lykke.Service.Dash.Api.Controllers
 
             var transactionContext = await _dashService.BuildTransactionAsync(request.OperationId, fromAddress, 
                 toAddress, amount, request.IncludeFee);
+
+            await _buildRepository.AddAsync(request.OperationId, transactionContext);
 
             return Ok(new BuildTransactionResponse()
             {
@@ -158,6 +174,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             await _dashService.DeleteBroadcastAsync(broadcast);
+            await _buildRepository.DeleteAsync(operationId);
 
             return Ok();
         }

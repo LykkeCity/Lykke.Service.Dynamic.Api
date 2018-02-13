@@ -15,8 +15,4 @@
     <ProjectReference Include="..\Lykke.Service.Dash.Api.Core\Lykke.Service.Dash.Api.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Transaction\" />
-  </ItemGroup>
-
 </Project>
