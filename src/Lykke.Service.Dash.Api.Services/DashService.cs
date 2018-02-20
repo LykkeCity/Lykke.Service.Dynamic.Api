@@ -13,6 +13,7 @@ using NBitcoin.Policy;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace Lykke.Service.Dash.Api.Services
 {
@@ -171,7 +172,7 @@ namespace Lykke.Service.Dash.Api.Services
                 {
                     await RefreshBalances(tx);
 
-                    await _broadcastRepository.SaveAsCompletedAsync(item.OperationId, tx.GetAmount(), 
+                    await _broadcastRepository.SaveAsCompletedAsync(item.OperationId, tx.GetAmount(),
                         tx.Fees, tx.BlockHeight);
                     await _broadcastInProgressRepository.DeleteAsync(item.OperationId);
                 }
@@ -243,6 +244,49 @@ namespace Lykke.Service.Dash.Api.Services
         public decimal GetFee()
         {
             return _dashApiSettings.Fee;
+        }
+
+        public async Task<Tx[]> GetFromAddressTxs(string fromAddress, int take, string afterHash)
+        {
+            var txsFinal = new List<Tx>();
+            var counter = 0;
+
+            while (true)
+            {
+                var txs = await GetAddressTxs(fromAddress, counter);
+
+                if (!txs.Any())
+                {
+                    return txsFinal.ToArray();
+                }
+
+                foreach (var tx in txs)
+                {
+                    counter++;
+                    
+                    if (tx.Vin != null && tx.Vin.Any(x => x.Addr == fromAddress))
+                    {
+                        if (tx.Txid == afterHash)
+                        {
+                            return txsFinal.ToArray();
+                        }
+
+                        txsFinal.Add(tx);
+
+                        if (txsFinal.Count == take)
+                        {
+                            return txsFinal.ToArray();
+                        }
+                    }
+                }
+            }            
+        }
+
+        private async Task<Tx[]> GetAddressTxs(string fromAddress, int continuation)
+        {
+            var txs = await _dashInsightClient.GetAddressTxs(fromAddress, continuation);
+
+            return txs == null ? new Tx[] { } : txs.ToArray();
         }
     }
 }

@@ -12,6 +12,7 @@ using Lykke.Service.Dash.Api.Helpers;
 using Lykke.Service.Dash.Api.Core.Domain;
 using Common.Log;
 using Lykke.Service.Dash.Api.Core.Repositories;
+using System.Linq;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
@@ -71,17 +72,11 @@ namespace Lykke.Service.Dash.Api.Controllers
 
             if (amount < fee)
             {
-                return Ok(new BuildTransactionResponse()
-                {
-                    ErrorCode = TransactionExecutionError.AmountIsTooSmall
-                });
+                return BadRequest(BlockchainErrorResponse.FromKnownError(BlockchainErrorCode.AmountIsTooSmall));
             }
             if (requiredBalance > fromAddressBalance)
             {
-                return Ok(new BuildTransactionResponse()
-                {
-                    ErrorCode = TransactionExecutionError.NotEnoughtBalance
-                });
+                return BadRequest(BlockchainErrorResponse.FromKnownError(BlockchainErrorCode.NotEnoughtBalance));
             }
 
             var transactionContext = await _dashService.BuildTransactionAsync(request.OperationId, fromAddress, 
@@ -103,7 +98,7 @@ namespace Lykke.Service.Dash.Api.Controllers
         }
 
         [HttpPost("broadcast")]
-        [ProducesResponseType(typeof(BroadcastTransactionResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> Broadcast([Required, FromBody] BroadcastTransactionRequest request)
         {
             if (!ModelState.IsValid)
@@ -125,14 +120,7 @@ namespace Lykke.Service.Dash.Api.Controllers
 
             await _dashService.BroadcastAsync(transaction, request.OperationId);
 
-            return Ok(new BroadcastTransactionResponse());
-        }
-
-        [HttpPost("broadcast/batched")]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        public IActionResult BroadcastBatched()
-        {
-            return new StatusCodeResult(StatusCodes.Status501NotImplemented);
+            return Ok();
         }
 
         [HttpGet("broadcast/single/{operationId}")]
@@ -180,8 +168,64 @@ namespace Lykke.Service.Dash.Api.Controllers
         }
 
         [HttpPost("history/from/{address}/observation")]
-        //[ProducesResponseType(typeof(BroadcastedTransactionResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> AddObservationFromAddress([Required] string address)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult AddObservationFromAddress([Required] string address)
+        {
+            var dashAddress = _dashService.GetBitcoinAddress(address);
+            if (dashAddress == null)
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
+            }
+
+            return Ok();
+        }
+
+        [HttpPost("history/to/{address}/observation")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult AddObservationToAddress([Required] string address)
+        {
+            var dashAddress = _dashService.GetBitcoinAddress(address);
+            if (dashAddress == null)
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
+            }
+
+            return Ok();
+        }
+
+        [HttpGet("history/from/{address}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HistoricalTransactionContract[]))]
+        public async Task<IActionResult> GetHistoryFromAddress([Required] string address,
+            [Required, FromQuery] int take, 
+            [FromQuery] string afterHash)
+        {
+            var dashAddress = _dashService.GetBitcoinAddress(address);
+            if (dashAddress == null)
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
+            }
+
+            var txs = await _dashService.GetFromAddressTxs(address, take, afterHash);
+
+            return Ok(txs.Select(f => f.ToHistoricalTransactionContract(address, true)));
+        }
+
+        [HttpDelete("history/from/{address}/observation")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult DeleteObservationFromAddress([Required] string address)
+        {
+            var dashAddress = _dashService.GetBitcoinAddress(address);
+            if (dashAddress == null)
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
+            }
+
+            return Ok();
+        }
+
+        [HttpDelete("history/to/{address}/observation")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult DeleteObservationToAddress([Required] string address)
         {
             var dashAddress = _dashService.GetBitcoinAddress(address);
             if (dashAddress == null)

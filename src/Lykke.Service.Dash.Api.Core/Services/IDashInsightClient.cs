@@ -11,6 +11,8 @@ namespace Lykke.Service.Dash.Api.Core.Services
 
         Task<Tx> GetTx(string txid);
 
+        Task<Tx[]> GetAddressTxs(string address, int continuation);
+
         Task<TxUnspent[]> GetTxsUnspentAsync(string address);
 
         Task<TxBroadcast> BroadcastTxAsync(string transactionHex);

@@ -11,8 +11,8 @@ namespace Lykke.Service.Dash.Api.Controllers
         {
             return new CapabilitiesResponse()
             {
-                AreManyInputsSupported = true,
-                AreManyOutputsSupported = true,
+                AreManyInputsSupported = false,
+                AreManyOutputsSupported = false,
                 IsTransactionsRebuildingSupported = false
             };
         }

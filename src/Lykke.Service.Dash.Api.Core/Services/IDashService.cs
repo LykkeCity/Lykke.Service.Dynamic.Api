@@ -1,4 +1,5 @@
 ﻿using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
+using Lykke.Service.Dash.Api.Core.Domain.InsightClient;
 using NBitcoin;
 using System;
 using System.Threading.Tasks;
@@ -29,5 +30,7 @@ namespace Lykke.Service.Dash.Api.Core.Services
         Task<decimal> GetAddressBalance(string address);
 
         decimal GetFee();
+
+        Task<Tx[]> GetFromAddressTxs(string fromAddress, int take, string afterHash);
     }
 }

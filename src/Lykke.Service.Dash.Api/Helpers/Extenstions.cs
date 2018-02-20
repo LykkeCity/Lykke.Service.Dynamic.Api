@@ -1,11 +1,15 @@
-﻿using Lykke.Service.BlockchainApi.Contract;
+﻿using Common;
+using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Assets;
 using Lykke.Service.BlockchainApi.Contract.Balances;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Dash.Api.Core.Domain;
 using Lykke.Service.Dash.Api.Core.Domain.Balance;
 using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
+using Lykke.Service.Dash.Api.Core.Domain.InsightClient;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Lykke.Service.Dash.Api.Helpers
 {
@@ -62,6 +66,51 @@ namespace Lykke.Service.Dash.Api.Helpers
                 AssetId = Asset.Dash.Id,
                 Balance = Conversions.CoinsToContract(self.Amount, Asset.Dash.Accuracy),
                 Block = self.Block
+            };
+        }
+
+        public static HistoricalTransactionContract ToHistoricalTransactionContract(this Tx self, string address, 
+            bool isFrom)
+        {
+            var fromAddress = "";
+            var toAddress = "";
+            var amount = 0M;
+
+            if (isFrom)
+            {
+                var vouts = self.Vout.Where(f => !f.ScriptPubKey.Addresses.Contains(address));
+                var toAddresses = new List<string>();
+
+                foreach (var vout in vouts)
+                {
+                    foreach (var voutAddress in vout.ScriptPubKey.Addresses)
+                    {
+                        if (!toAddresses.Contains(voutAddress))
+                        {
+                            toAddresses.Add(voutAddress);
+                        }
+                    }
+                }
+
+                fromAddress = address;
+                //toAddress = $"{{ {string.Join(",", toAddresses)} }}";
+                toAddress = toAddresses.FirstOrDefault();
+                amount = vouts.Sum(f => f.Value);
+            }
+            else
+            {
+                toAddress = address;
+            }
+
+            return new HistoricalTransactionContract
+            {
+                Amount = Conversions.CoinsToContract(amount, Asset.Dash.Accuracy),
+                AssetId = Asset.Dash.Id,
+                FromAddress = fromAddress,
+                ToAddress = toAddress,
+                Hash = self.Txid,
+                OperationId = Guid.Empty,
+                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(self.Time).DateTime.ToUniversalTime()
             };
         }
     }

@@ -4,6 +4,7 @@ using Lykke.Service.Dash.Api.Core.Domain.InsightClient;
 using Lykke.Service.Dash.Api.Core.Services;
 using Lykke.Service.Dash.Api.Services.Helpers;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -71,6 +72,31 @@ namespace Lykke.Service.Dash.Api.Services
             try
             {
                 return await GetJson<Tx>(url);
+            }
+            catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+            catch (Exception ex)
+            {
+                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(GetTxsUnspentAsync),
+                    $"Failed to get json for url='{url}'", ex);
+
+                throw;
+            }
+        }
+
+        public async Task<Tx[]> GetAddressTxs(string address, int continuation)
+        {
+            var start = continuation;
+            var end = start + 50;
+            var url = $"{_url}/addrs/{address}/txs?from={start}&to={end}";
+
+            try
+            {
+                var addressTxs = await GetJson<AddressTxs>(url);
+
+                return addressTxs.Items;
             }
             catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
             {
