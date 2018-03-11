@@ -14,6 +14,7 @@ using System;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
+using Common;
 
 namespace Lykke.Service.Dash.Api.Services
 {
@@ -117,8 +118,6 @@ namespace Lykke.Service.Dash.Api.Services
         {
             TxBroadcast response;
 
-            var block = await _dashInsightClient.GetLatestBlockHeight();
-
             try
             {
                 response = await _dashInsightClient.BroadcastTxAsync(transaction.ToHex());
@@ -129,18 +128,18 @@ namespace Lykke.Service.Dash.Api.Services
                 }
                 if (string.IsNullOrEmpty(response.Txid))
                 {
-                    throw new ArgumentException($"{nameof(response)}{nameof(response.Txid)} can not be null or empty");
+                    throw new ArgumentException($"{nameof(response)}{nameof(response.Txid)} can not be null or empty. Response={response}");
                 }
             }
             catch (Exception ex)
             {
                 await _log.WriteErrorAsync(nameof(DashService), nameof(BroadcastAsync),
                     $"transaction={transaction.ToString()}, operationId={operationId}", ex);
-                await _broadcastRepository.AddFailedAsync(operationId, transaction.GetHash().ToString(),
-                    ex.ToString(), block);
 
-                return;
+                throw;
             }
+
+            var block = await GetLatestBlockHeight();
 
             await _broadcastRepository.AddAsync(operationId, response.Txid, block);
             await _broadcastInProgressRepository.AddAsync(operationId, response.Txid);
@@ -170,6 +169,10 @@ namespace Lykke.Service.Dash.Api.Services
                 var tx = await _dashInsightClient.GetTx(item.Hash);
                 if (tx != null && tx.Confirmations >= _dashApiSettings.MinConfirmations)
                 {
+                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
+                        $"item.OperationId={item.OperationId}, tx={tx.ToJson()}",
+                        $"Brodcast update is detected");
+
                     await RefreshBalances(tx);
 
                     await _broadcastRepository.SaveAsCompletedAsync(item.OperationId, tx.GetAmount(),
@@ -186,10 +189,7 @@ namespace Lykke.Service.Dash.Api.Services
                 var balance = await _balanceRepository.GetAsync(address);
                 if (balance != null)
                 {
-                    var amount = await RefreshAddressBalance(address, tx.BlockHeight);
-
-                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshBalances),
-                        $"New balance of address={address} is {amount}");
+                    await RefreshAddressBalance(address);
                 }
             }
         }
@@ -204,7 +204,7 @@ namespace Lykke.Service.Dash.Api.Services
             }
         }
 
-        public async Task<decimal> RefreshAddressBalance(string address, long? block = null)
+        public async Task<decimal> RefreshAddressBalance(string address)
         {
             var balance = await GetAddressBalance(address);
 
@@ -216,19 +216,30 @@ namespace Lykke.Service.Dash.Api.Services
                     return balance;
                 }
 
-                if (!block.HasValue)
-                {
-                    block = await _dashInsightClient.GetLatestBlockHeight();
-                }
+                var block = await GetLatestBlockHeight();
 
-                await _balancePositiveRepository.SaveAsync(address, balance, block.Value);
+                await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
+                    $"address={address}, balance={balance}, block={block}",
+                    $"New balance is detected");
+
+                await _balancePositiveRepository.SaveAsync(address, balance, block);
             }
             else
             {
+                await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
+                    $"address={address}", $"Zero balance is detected");
+
                 await _balancePositiveRepository.DeleteAsync(address);
             }
 
             return balance;
+        }
+
+        private async Task<long> GetLatestBlockHeight()
+        {
+            var block = await _dashInsightClient.GetLatestBlockHeight();
+
+            return block - _dashApiSettings.MinConfirmations;
         }
 
         public async Task<decimal> GetAddressBalance(string address)

@@ -12,6 +12,7 @@ using Lykke.Service.Dash.Api.Core.Settings;
 using Lykke.Service.Dash.Api.Modules;
 using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
+using Lykke.Service.BlockchainApi.Contract;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -83,7 +84,7 @@ namespace Lykke.Service.Dash.Api
                     app.UseDeveloperExceptionPage();
                 }
 
-                app.UseLykkeMiddleware("DashApi", ex => new { Message = "Technical problem" });
+                app.UseLykkeMiddleware("Dash.Api", ex => BlockchainErrorResponse.FromUnknownError(ex.ToString()), logClientErrors: true);
 
                 app.UseMvc();
 

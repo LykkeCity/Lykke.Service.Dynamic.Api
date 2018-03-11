@@ -19,6 +19,7 @@ namespace Lykke.Service.Dash.Api.Controllers
     [Route("api/transactions")]
     public class TransactionsController : Controller
     {
+        private readonly ILog _log;
         private readonly IDashService _dashService;
         private readonly IBuildRepository _buildRepository;
 
@@ -26,6 +27,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             IDashService dashService,
             IBuildRepository buildRepository)
         {
+            _log = log;
             _dashService = dashService;
             _buildRepository = buildRepository;
         }
@@ -79,6 +81,9 @@ namespace Lykke.Service.Dash.Api.Controllers
                 return BadRequest(BlockchainErrorResponse.FromKnownError(BlockchainErrorCode.NotEnoughtBalance));
             }
 
+            await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Build),
+                $"request={request}", "Build transaction");
+
             var transactionContext = await _dashService.BuildTransactionAsync(request.OperationId, fromAddress, 
                 toAddress, amount, request.IncludeFee);
 
@@ -117,6 +122,9 @@ namespace Lykke.Service.Dash.Api.Controllers
             {
                 return BadRequest(ErrorResponse.Create($"{nameof(request.SignedTransaction)} is not a valid"));
             }
+
+            await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Broadcast),
+                $"request={request}", "Broadcast transaction");
 
             await _dashService.BroadcastAsync(transaction, request.OperationId);
 
@@ -160,6 +168,9 @@ namespace Lykke.Service.Dash.Api.Controllers
             {
                 return NoContent();
             }
+
+            await _log.WriteInfoAsync(nameof(TransactionsController), nameof(DeleteBroadcast),
+                $"operationId={operationId}", "Delete broadcast");
 
             await _dashService.DeleteBroadcastAsync(broadcast);
             await _buildRepository.DeleteAsync(operationId);
