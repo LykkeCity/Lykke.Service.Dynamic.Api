@@ -134,7 +134,7 @@ namespace Lykke.Service.Dash.Api.Services
             catch (Exception ex)
             {
                 await _log.WriteErrorAsync(nameof(DashService), nameof(BroadcastAsync),
-                    $"transaction={transaction.ToString()}, operationId={operationId}", ex);
+                    $"transaction: {transaction.ToString()}, operationId: {operationId}", ex);
 
                 throw;
             }
@@ -170,7 +170,7 @@ namespace Lykke.Service.Dash.Api.Services
                 if (tx != null && tx.Confirmations >= _dashApiSettings.MinConfirmations)
                 {
                     await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBroadcasts),
-                        $"item.OperationId={item.OperationId}, tx.Amount={tx.GetAmount()} tx={tx.ToJson()}",
+                        new { operationId = item.OperationId, amount = tx.GetAmount(), fees = tx.Fees, blockHeight = tx.BlockHeight }.ToJson(),
                         $"Brodcast update is detected");
 
                     await _broadcastRepository.SaveAsCompletedAsync(item.OperationId, tx.GetAmount(),
@@ -217,7 +217,7 @@ namespace Lykke.Service.Dash.Api.Services
                 var block = await GetLatestBlockHeight();
 
                 await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
-                    $"address={address}, balance={balance}, block={block}",
+                    new { address = address, balance = balance, block = block }.ToJson(),
                     $"Positive balance is detected");
 
                 await _balancePositiveRepository.SaveAsync(address, balance, block);
@@ -226,7 +226,8 @@ namespace Lykke.Service.Dash.Api.Services
             if(balance == 0 && deleteZeroBalance)
             {
                 await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
-                    $"address={address}", $"Zero balance is detected");
+                    new { address = address }.ToJson(), 
+                    $"Zero balance is detected");
 
                 await _balancePositiveRepository.DeleteAsync(address);
             }

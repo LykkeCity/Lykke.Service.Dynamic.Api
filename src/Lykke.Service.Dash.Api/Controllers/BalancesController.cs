@@ -11,6 +11,7 @@ using System.Linq;
 using Lykke.Service.Dash.Api.Helpers;
 using Lykke.Service.BlockchainApi.Contract;
 using Common.Log;
+using Common;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
@@ -66,7 +67,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             await _log.WriteInfoAsync(nameof(BalancesController), nameof(AddToObservations),
-                $"address={address}", "Add address to observations");
+                new { address = address }.ToJson(), "Add address to observations");
 
             await _balanceRepository.AddAsync(address);
 
@@ -89,7 +90,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             await _log.WriteInfoAsync(nameof(BalancesController), nameof(DeleteFromObservations),
-                $"address={address}", "Delete address from observations");
+                new { address = address }.ToJson(), "Delete address from observations");
 
             await _balanceRepository.DeleteAsync(address);
             await _balancePositiveRepository.DeleteAsync(address);

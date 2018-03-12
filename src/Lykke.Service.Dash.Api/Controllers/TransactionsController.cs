@@ -83,7 +83,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Build),
-                $"request={request.ToJson()}", "Build transaction");
+                request.ToJson(), "Build transaction");
 
             var transactionContext = await _dashService.BuildTransactionAsync(request.OperationId, fromAddress, 
                 toAddress, amount, request.IncludeFee);
@@ -125,7 +125,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Broadcast),
-                $"request={request.ToJson()}", "Broadcast transaction");
+                request.ToJson(), "Broadcast transaction");
 
             await _dashService.BroadcastAsync(transaction, request.OperationId);
 
@@ -171,7 +171,8 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(DeleteBroadcast),
-                $"operationId={operationId}", "Delete broadcast");
+                new { operationId = operationId }.ToJson(), 
+                "Delete broadcast");
 
             await _dashService.DeleteBroadcastAsync(broadcast);
             await _buildRepository.DeleteAsync(operationId);
