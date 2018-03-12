@@ -20,6 +20,11 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.BalancePositive
             _table = AzureTableStorage<BalancePositiveEntity>.Create(connectionStringManager, "BalancesPositive", log);
         }
 
+        public async Task<IEnumerable<IBalancePositive>> GetAllAsync()
+        {
+            return await _table.GetDataAsync(GetPartitionKey());
+        }
+
         public async Task<IBalancePositive> GetAsync(string address)
         {
             return await _table.GetDataAsync(GetPartitionKey(), GetRowKey(address));

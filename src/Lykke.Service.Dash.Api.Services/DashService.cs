@@ -169,15 +169,15 @@ namespace Lykke.Service.Dash.Api.Services
                 var tx = await _dashInsightClient.GetTx(item.Hash);
                 if (tx != null && tx.Confirmations >= _dashApiSettings.MinConfirmations)
                 {
-                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
-                        $"item.OperationId={item.OperationId}, tx={tx.ToJson()}",
+                    await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBroadcasts),
+                        $"item.OperationId={item.OperationId}, tx.Amount={tx.GetAmount()} tx={tx.ToJson()}",
                         $"Brodcast update is detected");
-
-                    await RefreshBalances(tx);
 
                     await _broadcastRepository.SaveAsCompletedAsync(item.OperationId, tx.GetAmount(),
                         tx.Fees, tx.BlockHeight);
                     await _broadcastInProgressRepository.DeleteAsync(item.OperationId);
+
+                    await RefreshBalances(tx);
                 }
             }
         }
@@ -189,7 +189,7 @@ namespace Lykke.Service.Dash.Api.Services
                 var balance = await _balanceRepository.GetAsync(address);
                 if (balance != null)
                 {
-                    await RefreshAddressBalance(address);
+                    await RefreshAddressBalance(address, true);
                 }
             }
         }
@@ -197,34 +197,33 @@ namespace Lykke.Service.Dash.Api.Services
         public async Task UpdateBalances()
         {
             var balances = await _balanceRepository.GetAllAsync();
+            var positiveBalances = await _balancePositiveRepository.GetAllAsync();
 
             foreach (var balance in balances)
             {
-                await RefreshAddressBalance(balance.Address);
+                var deleteZeroBalance = positiveBalances.Any(f => f.Address == balance.Address);
+
+                await RefreshAddressBalance(balance.Address, deleteZeroBalance);
             }
         }
 
-        public async Task<decimal> RefreshAddressBalance(string address)
+        private async Task<decimal> RefreshAddressBalance(string address, bool deleteZeroBalance)
         {
             var balance = await GetAddressBalance(address);
 
             if (balance > 0)
             {
                 var balancePositive = await _balancePositiveRepository.GetAsync(address);
-                if (balancePositive != null && balancePositive.Amount == balance)
-                {
-                    return balance;
-                }
-
                 var block = await GetLatestBlockHeight();
 
                 await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
                     $"address={address}, balance={balance}, block={block}",
-                    $"New balance is detected");
+                    $"Positive balance is detected");
 
                 await _balancePositiveRepository.SaveAsync(address, balance, block);
             }
-            else
+
+            if(balance == 0 && deleteZeroBalance)
             {
                 await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
                     $"address={address}", $"Zero balance is detected");
@@ -237,9 +236,7 @@ namespace Lykke.Service.Dash.Api.Services
 
         private async Task<long> GetLatestBlockHeight()
         {
-            var block = await _dashInsightClient.GetLatestBlockHeight();
-
-            return block - _dashApiSettings.MinConfirmations;
+            return await _dashInsightClient.GetLatestBlockHeight();
         }
 
         public async Task<decimal> GetAddressBalance(string address)

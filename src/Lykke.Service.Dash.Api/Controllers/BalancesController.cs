@@ -69,7 +69,6 @@ namespace Lykke.Service.Dash.Api.Controllers
                 $"address={address}", "Add address to observations");
 
             await _balanceRepository.AddAsync(address);
-            await _dashService.RefreshAddressBalance(address);
 
             return Ok();
         }

@@ -13,6 +13,7 @@ using Lykke.Service.Dash.Api.Core.Domain;
 using Common.Log;
 using Lykke.Service.Dash.Api.Core.Repositories;
 using System.Linq;
+using Common;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
@@ -82,7 +83,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Build),
-                $"request={request}", "Build transaction");
+                $"request={request.ToJson()}", "Build transaction");
 
             var transactionContext = await _dashService.BuildTransactionAsync(request.OperationId, fromAddress, 
                 toAddress, amount, request.IncludeFee);
@@ -124,7 +125,7 @@ namespace Lykke.Service.Dash.Api.Controllers
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Broadcast),
-                $"request={request}", "Broadcast transaction");
+                $"request={request.ToJson()}", "Broadcast transaction");
 
             await _dashService.BroadcastAsync(transaction, request.OperationId);
 
