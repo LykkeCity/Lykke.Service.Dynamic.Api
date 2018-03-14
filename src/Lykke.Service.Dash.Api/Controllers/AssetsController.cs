@@ -11,10 +11,6 @@ namespace Lykke.Service.Dash.Api.Controllers
     [Route("api/assets")]
     public class AssetsController : Controller
     {
-        public AssetsController()
-        {
-        }
-
         [HttpGet]
         public PaginationResponse<AssetResponse> Get([Required, FromQuery] int take, [FromQuery] string continuation)
         {

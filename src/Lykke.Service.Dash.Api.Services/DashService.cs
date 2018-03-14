@@ -134,7 +134,7 @@ namespace Lykke.Service.Dash.Api.Services
             catch (Exception ex)
             {
                 await _log.WriteErrorAsync(nameof(DashService), nameof(BroadcastAsync),
-                    $"transaction: {transaction.ToString()}, operationId: {operationId}", ex);
+                    $"transaction: {transaction}, operationId: {operationId}", ex);
 
                 throw;
             }
@@ -304,7 +304,7 @@ namespace Lykke.Service.Dash.Api.Services
         {
             var txs = await _dashInsightClient.GetAddressTxs(fromAddress, continuation);
 
-            return txs == null ? new Tx[] { } : txs.ToArray();
+            return txs?.ToArray() ?? new Tx[] { };
         }
     }
 }
