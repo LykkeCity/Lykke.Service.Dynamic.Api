@@ -39,20 +39,6 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
             });
         }
 
-        public async Task AddFailedAsync(Guid operationId, string hash, string error, long block)
-        {
-            await _table.InsertOrReplaceAsync(new BroadcastEntity
-            {
-                PartitionKey = GetPartitionKey(operationId),
-                RowKey = GetRowKey(operationId),
-                FailedUtc = DateTime.UtcNow,
-                State = BroadcastState.Failed,
-                Hash = hash,
-                Error = error,
-                Block = block
-            });
-        }
-
         public async Task SaveAsCompletedAsync(Guid operationId, decimal amount, decimal fee, long block)
         {
             await _table.ReplaceAsync(GetPartitionKey(operationId), GetRowKey(operationId), x =>
