@@ -213,12 +213,21 @@ namespace Lykke.Service.Dash.Api.Services
 
             if (balance > 0)
             {
-                var balancePositive = await _balancePositiveRepository.GetAsync(address);
                 var block = await GetLatestBlockHeight();
 
-                await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
-                    new { address = address, balance = balance, block = block }.ToJson(),
-                    $"Positive balance is detected");
+                var balancePositive = await _balancePositiveRepository.GetAsync(address);
+                if (balancePositive == null)
+                {
+                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
+                        new { address = address, balance = balance, block = block }.ToJson(),
+                        $"Positive balance is detected");
+                }
+                if (balancePositive != null && balancePositive.Amount != balance)
+                {
+                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
+                        new { address = address, balance = balance, oldBalance = balancePositive.Amount, block = block }.ToJson(),
+                        $"Change in positive balance is detected");
+                }
 
                 await _balancePositiveRepository.SaveAsync(address, balance, block);
             }
