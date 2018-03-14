@@ -6,7 +6,7 @@ using AzureStorage.Tables;
 using Common.Log;
 using Lykke.SettingsReader;
 using Lykke.Service.Dash.Api.Core.Repositories;
-using Lykke.Service.Dash.Api.Core.Domain.BroadcastInProgress;
+using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
 
 namespace Lykke.Service.Dash.Api.AzureRepositories.BroadcastInProgress
 {
