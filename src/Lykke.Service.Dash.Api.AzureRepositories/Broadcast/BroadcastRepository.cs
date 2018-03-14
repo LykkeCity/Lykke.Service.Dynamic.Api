@@ -68,7 +68,7 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.Broadcast
 
         public async Task DeleteAsync(Guid operationId)
         {
-            await _table.DeleteAsync(GetPartitionKey(), GetRowKey(operationId));
+            await _table.DeleteIfExistAsync(GetPartitionKey(), GetRowKey(operationId));
         }
     }
 }

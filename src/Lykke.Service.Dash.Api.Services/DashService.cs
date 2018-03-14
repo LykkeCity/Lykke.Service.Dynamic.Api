@@ -152,12 +152,8 @@ namespace Lykke.Service.Dash.Api.Services
 
         public async Task DeleteBroadcastAsync(IBroadcast broadcast)
         {
+            await _broadcastInProgressRepository.DeleteAsync(broadcast.OperationId);
             await _broadcastRepository.DeleteAsync(broadcast.OperationId);
-
-            if (broadcast.State == BroadcastState.Broadcasted)
-            {
-                await _broadcastInProgressRepository.DeleteAsync(broadcast.OperationId);
-            }
         }
 
         public async Task UpdateBroadcasts()

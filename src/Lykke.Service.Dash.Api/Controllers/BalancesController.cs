@@ -12,6 +12,7 @@ using Lykke.Service.BlockchainApi.Contract;
 using Common.Log;
 using Common;
 using Lykke.Common.Api.Contract.Responses;
+using System;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
@@ -92,8 +93,8 @@ namespace Lykke.Service.Dash.Api.Controllers
             await _log.WriteInfoAsync(nameof(BalancesController), nameof(DeleteFromObservations),
                 new { address = address }.ToJson(), "Delete address from observations");
 
-            await _balanceRepository.DeleteAsync(address);
             await _balancePositiveRepository.DeleteAsync(address);
+            await _balanceRepository.DeleteAsync(address);
 
             return Ok();
         }

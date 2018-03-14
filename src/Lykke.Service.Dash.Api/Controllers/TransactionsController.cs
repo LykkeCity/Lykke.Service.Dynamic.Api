@@ -174,8 +174,8 @@ namespace Lykke.Service.Dash.Api.Controllers
                 new { operationId = operationId }.ToJson(), 
                 "Delete broadcast");
 
-            await _dashService.DeleteBroadcastAsync(broadcast);
             await _buildRepository.DeleteAsync(operationId);
+            await _dashService.DeleteBroadcastAsync(broadcast);
 
             return Ok();
         }
