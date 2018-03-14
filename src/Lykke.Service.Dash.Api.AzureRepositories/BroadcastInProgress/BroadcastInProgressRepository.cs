@@ -7,13 +7,14 @@ using Common.Log;
 using Lykke.SettingsReader;
 using Lykke.Service.Dash.Api.Core.Repositories;
 using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
+using Common;
 
 namespace Lykke.Service.Dash.Api.AzureRepositories.BroadcastInProgress
 {
     public class BroadcastInProgressRepository : IBroadcastInProgressRepository
     {
         private readonly INoSQLTableStorage<BroadcastInProgressEntity> _table;
-        private static string GetPartitionKey() => "";
+        private static string GetPartitionKey(Guid operationId) => operationId.ToString().CalculateHexHash32(3);
         private static string GetRowKey(Guid operationId) => operationId.ToString();
 
         public BroadcastInProgressRepository(IReloadingManager<string> connectionStringManager, ILog log)
@@ -23,14 +24,14 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.BroadcastInProgress
 
         public async Task<IEnumerable<IBroadcastInProgress>> GetAllAsync()
         {
-            return await _table.GetDataAsync(GetPartitionKey());
+            return await _table.GetDataAsync();
         }
 
         public async Task AddAsync(Guid operationId, string hash)
         {
             await _table.InsertOrReplaceAsync(new BroadcastInProgressEntity
             {
-                PartitionKey = GetPartitionKey(),
+                PartitionKey = GetPartitionKey(operationId),
                 RowKey = GetRowKey(operationId),
                 Hash = hash
             });
@@ -38,7 +39,7 @@ namespace Lykke.Service.Dash.Api.AzureRepositories.BroadcastInProgress
 
         public async Task DeleteAsync(Guid operationId)
         {
-            await _table.DeleteIfExistAsync(GetPartitionKey(), GetRowKey(operationId));
+            await _table.DeleteIfExistAsync(GetPartitionKey(operationId), GetRowKey(operationId));
         }
     }
 }

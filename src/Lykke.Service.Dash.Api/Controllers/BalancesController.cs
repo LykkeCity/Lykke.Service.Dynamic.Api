@@ -41,10 +41,10 @@ namespace Lykke.Service.Dash.Api.Controllers
             var result = await _balancePositiveRepository.GetAsync(take, continuation);
             
             return PaginationResponse.From(
-                result.Continuation, 
-                result.Items.Select(f => f.ToWalletBalanceContract()).ToArray()
+                result.ContinuationToken, 
+                result.Entities.Select(f => f.ToWalletBalanceContract()).ToArray()
             );
-       }
+        }
 
         [HttpPost("{address}/observation")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
