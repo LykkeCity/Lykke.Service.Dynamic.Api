@@ -1,4 +1,5 @@
 ﻿using Common;
+using Lykke.Common.Api.Contract.Responses;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Assets;
 using Lykke.Service.BlockchainApi.Contract.Balances;
@@ -7,6 +8,7 @@ using Lykke.Service.Dash.Api.Core.Domain;
 using Lykke.Service.Dash.Api.Core.Domain.Balance;
 using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
 using Lykke.Service.Dash.Api.Core.Domain.InsightClient;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +17,26 @@ namespace Lykke.Service.Dash.Api.Helpers
 {
     public static class Extenstions
     {
+        public static ErrorResponse ToErrorResponse(this ModelStateDictionary modelState)
+        {
+            var response = new ErrorResponse();
+
+            foreach (var state in modelState)
+            {
+                var messages = state.Value.Errors
+                    .Where(e => !string.IsNullOrWhiteSpace(e.ErrorMessage))
+                    .Select(e => e.ErrorMessage)
+                    .Concat(state.Value.Errors
+                        .Where(e => string.IsNullOrWhiteSpace(e.ErrorMessage))
+                        .Select(e => e.Exception.Message))
+                    .ToList();
+
+                response.ModelErrors.Add(state.Key, messages);
+            }
+
+            return response;
+        }
+
         public static AssetResponse ToAssetResponse(this Asset self)
         {
             return new AssetResponse

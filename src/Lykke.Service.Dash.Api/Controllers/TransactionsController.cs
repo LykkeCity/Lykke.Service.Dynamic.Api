@@ -1,5 +1,4 @@
 ﻿using Lykke.Service.BlockchainApi.Contract.Transactions;
-using Lykke.Service.Dash.Api.Models;
 using Lykke.Service.Dash.Api.Core.Services;
 using Lykke.Service.BlockchainApi.Contract;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +13,7 @@ using Common.Log;
 using Lykke.Service.Dash.Api.Core.Repositories;
 using System.Linq;
 using Common;
+using Lykke.Common.Api.Contract.Responses;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
@@ -39,7 +39,7 @@ namespace Lykke.Service.Dash.Api.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorResponse.Create("ValidationError", ModelState));
+                return BadRequest(ModelState.ToErrorResponse());
             }
 
             var fromAddress = _dashService.GetBitcoinAddress(request.FromAddress);
@@ -109,7 +109,7 @@ namespace Lykke.Service.Dash.Api.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorResponse.Create("ValidationError", ModelState));
+                return BadRequest(ModelState.ToErrorResponse());
             }
 
             var broadcast = await _dashService.GetBroadcastAsync(request.OperationId);

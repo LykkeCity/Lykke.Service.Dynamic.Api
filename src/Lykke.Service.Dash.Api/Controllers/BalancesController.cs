@@ -1,5 +1,4 @@
-﻿using Lykke.Service.Dash.Api.Models;
-using Lykke.Service.BlockchainApi.Contract.Balances;
+﻿using Lykke.Service.BlockchainApi.Contract.Balances;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
@@ -12,6 +11,7 @@ using Lykke.Service.Dash.Api.Helpers;
 using Lykke.Service.BlockchainApi.Contract;
 using Common.Log;
 using Common;
+using Lykke.Common.Api.Contract.Responses;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {

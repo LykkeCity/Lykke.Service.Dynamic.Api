@@ -1,10 +1,9 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Net;
 using Lykke.Service.Dash.Api.Core.Services;
-using Lykke.Service.Dash.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using Lykke.Common.Api.Contract.Responses;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {
