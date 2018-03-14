@@ -8,7 +8,7 @@ namespace Lykke.Service.Dash.Api.Core.Repositories
     {
         Task AddAsync(string address);
         Task DeleteAsync(string address);
-        Task<IEnumerable<IBalance>> GetAllAsync();
+        Task<(IEnumerable<IBalance> Entities, string ContinuationToken)> GetAsync(int take, string continuation);
         Task<IBalance> GetAsync(string address);
     }
 }

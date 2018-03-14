@@ -192,14 +192,25 @@ namespace Lykke.Service.Dash.Api.Services
 
         public async Task UpdateBalances()
         {
-            var balances = await _balanceRepository.GetAllAsync();
             var positiveBalances = await _balancePositiveRepository.GetAllAsync();
+            var continuation = "";
 
-            foreach (var balance in balances)
+            while (true)
             {
-                var deleteZeroBalance = positiveBalances.Any(f => f.Address == balance.Address);
+                var balances = await _balanceRepository.GetAsync(100, continuation);
+                if (string.IsNullOrEmpty(balances.ContinuationToken))
+                {
+                    break;
+                }
 
-                await RefreshAddressBalance(balance.Address, deleteZeroBalance);
+                foreach (var balance in balances.Entities)
+                {
+                    var deleteZeroBalance = positiveBalances.Any(f => f.Address == balance.Address);
+
+                    await RefreshAddressBalance(balance.Address, deleteZeroBalance);
+                }
+
+                continuation = balances.ContinuationToken;
             }
         }
 
