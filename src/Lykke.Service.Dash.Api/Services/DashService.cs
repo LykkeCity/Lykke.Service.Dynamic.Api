@@ -74,7 +74,7 @@ namespace Lykke.Service.Dash.Api.Services
             BitcoinAddress toAddress, decimal amount, bool includeFee)
         {
             var sendAmount = Money.FromUnit(amount, Asset.Dash.Unit);
-            var txsUnspent = await _dashInsightClient.GetTxsUnspentAsync(fromAddress.ToString());
+            var txsUnspent = await _dashInsightClient.GetTxsUnspentAsync(fromAddress.ToString(), _minConfirmations);
 
             var builder = new TransactionBuilder()
                 .Send(toAddress, sendAmount)

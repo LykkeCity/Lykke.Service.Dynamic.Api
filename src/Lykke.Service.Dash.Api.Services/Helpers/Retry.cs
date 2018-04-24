@@ -30,8 +30,6 @@ namespace Lykke.Service.Dash.Api.Services.Helpers
                     {
                         await Task.Delay(delayAfterException);
                     }
-
-                    await logger.WriteErrorAsync("Retry", "Try", null, ex);
                 }
             }
         }

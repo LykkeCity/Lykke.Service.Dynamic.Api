@@ -4,7 +4,6 @@ using Lykke.Service.Dash.Api.Core.Domain.InsightClient;
 using Lykke.Service.Dash.Api.Core.Services;
 using Lykke.Service.Dash.Api.Services.Helpers;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -24,44 +23,19 @@ namespace Lykke.Service.Dash.Api.Services
 
         public async Task<decimal> GetBalance(string address, int minConfirmations)
         {
-            var utxos = await GetTxsUnspentAsync(address);
-            var balance = utxos
-                .Where(f => f.Confirmations >= minConfirmations)
-                .Sum(f => f.Amount);
-
-            return balance;
-        }
-
-        public async Task<ulong> GetBalanceSatoshis(string address)
-        {
-            var url = $"{_url}/addr/{address}/balance";
-
-            try
-            {
-                return await GetJson<ulong>(url);
-            }
-            catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
-            {
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(GetBalanceSatoshis),
-                    $"Failed to get value for url='{url}'", ex);
-
-                throw;
-            }
+            var utxos = await GetTxsUnspentAsync(address, minConfirmations);
+            
+            return utxos.Sum(f => f.Amount);
         }
 
         public async Task<long> GetLatestBlockHeight()
         {
+            BlocksInfo blocksInfo; 
             var url = $"{_url}/blocks?limit=1";
 
             try
             {
-                var response = await GetJson<BlocksInfo>(url);
-
-                return response.Blocks[0].Height;
+                blocksInfo = await GetJson<BlocksInfo>(url);
             }
             catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -69,11 +43,23 @@ namespace Lykke.Service.Dash.Api.Services
             }
             catch (Exception ex)
             {
-                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(GetLatestBlockHeight),
-                    $"Failed to get json for url='{url}'", ex);
-
-                throw;
+                throw new Exception($"Failed to get {nameof(BlocksInfo)} for url='{url}'", ex);
             }
+
+            if (blocksInfo == null)
+            {
+                throw new Exception($"{nameof(blocksInfo)} can not be null");
+            }
+            if (blocksInfo.Blocks == null)
+            {
+                throw new Exception($"{nameof(blocksInfo)}{nameof(blocksInfo.Blocks)} can not be null");
+            }
+            if (blocksInfo.Blocks.Length == 0)
+            {
+                throw new Exception($"{nameof(blocksInfo)}{nameof(blocksInfo.Blocks)} must have at least one entry");
+            }
+
+            return blocksInfo.Blocks[0].Height;
         }
 
         public async Task<Tx> GetTx(string txid)
@@ -90,24 +76,20 @@ namespace Lykke.Service.Dash.Api.Services
             }
             catch (Exception ex)
             {
-                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(GetTxsUnspentAsync),
-                    $"Failed to get json for url='{url}'", ex);
-
-                throw;
+                throw new Exception($"Failed to get {nameof(Tx)} for url='{url}'", ex);
             }
         }
 
         public async Task<Tx[]> GetAddressTxs(string address, int continuation)
         {
+            AddressTxs addressTxs;
             var start = continuation;
             var end = start + 50;
             var url = $"{_url}/addrs/{address}/txs?from={start}&to={end}";
 
             try
             {
-                var addressTxs = await GetJson<AddressTxs>(url);
-
-                return addressTxs.Items;
+                addressTxs = await GetJson<AddressTxs>(url);
             }
             catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -115,20 +97,25 @@ namespace Lykke.Service.Dash.Api.Services
             }
             catch (Exception ex)
             {
-                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(GetTxsUnspentAsync),
-                    $"Failed to get json for url='{url}'", ex);
-
-                throw;
+                throw new Exception($"Failed to get {nameof(AddressTxs)} for url='{url}'", ex);
             }
+
+            if (addressTxs == null)
+            {
+                throw new Exception($"{nameof(addressTxs)} can not be null");
+            }
+
+            return addressTxs.Items;
         }
 
-        public async Task<TxUnspent[]> GetTxsUnspentAsync(string address)
+        public async Task<TxUnspent[]> GetTxsUnspentAsync(string address, int minConfirmations)
         {
+            TxUnspent[] txsUnspent;
             var url = $"{_url}/addr/{address}/utxo";
 
             try
             {
-                return await GetJson<TxUnspent[]>(url);
+                txsUnspent =  await GetJson<TxUnspent[]>(url);
             }
             catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -136,11 +123,15 @@ namespace Lykke.Service.Dash.Api.Services
             }
             catch (Exception ex)
             {
-                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(GetTxsUnspentAsync),
-                    $"Failed to get json for url='{url}'", ex);
-
-                throw;
+                throw new Exception($"Failed to get {nameof(TxUnspent)}[] for url='{url}'", ex);
             }
+
+            if (txsUnspent == null)
+            {
+                return new TxUnspent[] { };
+            }
+
+            return txsUnspent.Where(f => f.Confirmations >= minConfirmations).ToArray();
         }
 
         public async Task<TxBroadcast> BroadcastTxAsync(string transactionHex)
@@ -156,10 +147,7 @@ namespace Lykke.Service.Dash.Api.Services
             }
             catch (Exception ex)
             {
-                await _log.WriteErrorAsync(nameof(DashInsightClient), nameof(BroadcastTxAsync),
-                    $"Failed to post json for url='{url}' and data='{data}'", ex);
-
-                throw;
+                throw new Exception($"Failed to post and get {nameof(TxBroadcast)} for url='{url}' and data='{data}'", ex);
             }
         }
 
@@ -167,19 +155,7 @@ namespace Lykke.Service.Dash.Api.Services
         {
             bool NeedToRetryException(Exception ex)
             {
-                if (!(ex is FlurlHttpException flurlException))
-                {
-                    return false;
-                }
-
-                var isTimeout = flurlException is FlurlHttpTimeoutException;
-                if (isTimeout)
-                {
-                    return true;
-                }
-
-                if (flurlException.Call.HttpStatus == HttpStatusCode.ServiceUnavailable ||
-                    flurlException.Call.HttpStatus == HttpStatusCode.InternalServerError)
+                if (ex is FlurlHttpException flurlException)
                 {
                     return true;
                 }
@@ -187,7 +163,7 @@ namespace Lykke.Service.Dash.Api.Services
                 return false;
             }
 
-            return await Retry.Try(() => url.GetJsonAsync<T>(), NeedToRetryException, tryCount, _log);
+            return await Retry.Try(() => url.GetJsonAsync<T>(), NeedToRetryException, tryCount, _log, 100);
         }
     }
 }
