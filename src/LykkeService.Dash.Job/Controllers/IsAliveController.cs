@@ -1,11 +1,11 @@
 ﻿using System.Linq;
 using System.Net;
+using Lykke.Service.Dash.Api.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using Lykke.Service.Dash.Api.Core.Services;
 using Lykke.Common.Api.Contract.Responses;
 
-namespace Lykke.Service.Dash.Api.Controllers
+namespace Lykke.Service.Dash.Job.Controllers
 {
     // NOTE: See https://lykkex.atlassian.net/wiki/spaces/LKEWALLET/pages/35755585/Add+your+app+to+Monitoring
     [Route("api/[controller]")]

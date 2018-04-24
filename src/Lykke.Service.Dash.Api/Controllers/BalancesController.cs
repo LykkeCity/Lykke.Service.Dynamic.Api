@@ -1,18 +1,17 @@
-﻿using Lykke.Service.BlockchainApi.Contract.Balances;
-using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
-using System.Net;
-using System.Threading.Tasks;
-using Lykke.Service.Dash.Api.Core.Services;
-using Lykke.Service.Dash.Api.Core.Repositories;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using System.Net;
 using System.Linq;
-using Lykke.Service.Dash.Api.Helpers;
-using Lykke.Service.BlockchainApi.Contract;
-using Common.Log;
+using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 using Common;
+using Common.Log;
 using Lykke.Common.Api.Contract.Responses;
-using System;
+using Lykke.Service.BlockchainApi.Contract;
+using Lykke.Service.BlockchainApi.Contract.Balances;
+using Lykke.Service.Dash.Api.Core.Repositories;
+using Lykke.Service.Dash.Api.Helpers;
+using Lykke.Service.Dash.Api.Services;
 
 namespace Lykke.Service.Dash.Api.Controllers
 {

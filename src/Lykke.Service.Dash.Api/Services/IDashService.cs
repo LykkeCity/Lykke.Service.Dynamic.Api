@@ -4,7 +4,7 @@ using NBitcoin;
 using System;
 using System.Threading.Tasks;
 
-namespace Lykke.Service.Dash.Api.Core.Services
+namespace Lykke.Service.Dash.Api.Services
 {
     public interface IDashService
     {
@@ -20,10 +20,6 @@ namespace Lykke.Service.Dash.Api.Core.Services
         Task<IBroadcast> GetBroadcastAsync(Guid operationId);
 
         Task DeleteBroadcastAsync(IBroadcast broadcast);
-
-        Task UpdateBroadcasts();
-
-        Task UpdateBalances();
 
         Task<decimal> GetAddressBalance(string address);
 

@@ -3,22 +3,23 @@ using Common.Log;
 using Lykke.Service.Dash.Api.AzureRepositories.BroadcastInProgress;
 using Lykke.Service.Dash.Api.Core.Services;
 using Lykke.Service.Dash.Api.Core.Repositories;
-using Lykke.Service.Dash.Api.Core.Settings.ServiceSettings;
 using Lykke.Service.Dash.Api.Services;
 using Lykke.SettingsReader;
 using Lykke.Service.Dash.Api.AzureRepositories.Balance;
 using Lykke.Service.Dash.Api.AzureRepositories.BalancePositive;
+using Lykke.Service.Dash.Job.PeriodicalHandlers;
 using Lykke.Service.Dash.Api.AzureRepositories.Broadcast;
-using Lykke.Service.Dash.Api.AzureRepositories.Build;
+using Lykke.Service.Dash.Job.Settings;
+using Lykke.Service.Dash.Job.Services;
 
-namespace Lykke.Service.Dash.Api.Modules
+namespace Lykke.Service.Dash.Job.Modules
 {
     public class ServiceModule : Module
     {
-        private readonly IReloadingManager<DashApiSettings> _settings;
+        private readonly IReloadingManager<DashJobSettings> _settings;
         private readonly ILog _log;
 
-        public ServiceModule(IReloadingManager<DashApiSettings> settings, ILog log)
+        public ServiceModule(IReloadingManager<DashJobSettings> settings, ILog log)
         {
             _settings = settings;
             _log = log;
@@ -62,21 +63,26 @@ namespace Lykke.Service.Dash.Api.Modules
                 .WithParameter(TypedParameter.From(connectionStringManager))
                 .SingleInstance();
 
-            builder.RegisterType<BuildRepository>()
-                .As<IBuildRepository>()
-                .WithParameter(TypedParameter.From(connectionStringManager))
-                .SingleInstance();
-
             builder.RegisterType<DashInsightClient>()
                 .As<IDashInsightClient>()
                 .WithParameter("url", _settings.CurrentValue.InsightApiUrl)
                 .SingleInstance();
 
-            builder.RegisterType<DashService>()
-                .As<IDashService>()
-                .WithParameter("network", _settings.CurrentValue.Network)
-                .WithParameter("fee", _settings.CurrentValue.Fee)
-                .WithParameter("minConfirmations", _settings.CurrentValue.MinConfirmations)
+            builder.RegisterType<PeriodicalService>()
+                .As<IPeriodicalService>()
+                .WithParameter(TypedParameter.From(_settings.CurrentValue.MinConfirmations))
+                .SingleInstance();            
+
+            builder.RegisterType<BalanceHandler>()
+                .As<IStartable>()
+                .AutoActivate()
+                .WithParameter("period", _settings.CurrentValue.BalanceCheckerIntervalMs)
+                .SingleInstance();
+
+            builder.RegisterType<BroadcastHandler>()
+                .As<IStartable>()
+                .AutoActivate()
+                .WithParameter("period", _settings.CurrentValue.BroadcastCheckerIntervalMs)
                 .SingleInstance();
         }
     }

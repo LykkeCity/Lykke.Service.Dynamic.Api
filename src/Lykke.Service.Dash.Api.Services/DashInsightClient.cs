@@ -5,6 +5,7 @@ using Lykke.Service.Dash.Api.Core.Services;
 using Lykke.Service.Dash.Api.Services.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -19,6 +20,16 @@ namespace Lykke.Service.Dash.Api.Services
         {
             _log = log;
             _url = url;
+        }
+
+        public async Task<decimal> GetBalance(string address, int minConfirmations)
+        {
+            var utxos = await GetTxsUnspentAsync(address);
+            var balance = utxos
+                .Where(f => f.Confirmations >= minConfirmations)
+                .Sum(f => f.Amount);
+
+            return balance;
         }
 
         public async Task<ulong> GetBalanceSatoshis(string address)
