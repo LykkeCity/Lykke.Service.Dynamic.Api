@@ -19,6 +19,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using Lykke.Logs.Slack;
 
 namespace Lykke.Service.Dash.Job
 {
@@ -62,7 +63,7 @@ namespace Lykke.Service.Dash.Job
                 var appSettings = Configuration.LoadSettings<AppSettings>();
                 Log = CreateLogWithSlack(services, appSettings);
 
-                builder.RegisterModule(new ServiceModule(appSettings.Nested(x => x.DashJob), Log));
+                builder.RegisterModule(new JobModule(appSettings.Nested(x => x.DashJob), Log));
                 builder.Populate(services);
                 ApplicationContainer = builder.Build();
 
@@ -204,6 +205,18 @@ namespace Lykke.Service.Dash.Job
             azureStorageLogger.Start();
 
             aggregateLogger.AddLog(azureStorageLogger);
+            aggregateLogger.AddLog(LykkeLogToSlack.Create
+            (
+                slackService,
+                "BlockChainIntegration",
+                LogLevel.All
+            ));
+            aggregateLogger.AddLog(LykkeLogToSlack.Create
+            (
+                slackService,
+                "BlockChainIntegrationImportantMessages",
+                LogLevel.All ^ LogLevel.Info
+            ));
 
             return aggregateLogger;
         }

@@ -11,8 +11,8 @@ namespace Lykke.Service.Dash.Job.PeriodicalHandlers
         private ILog _log;
         private IPeriodicalService _periodicalService;
 
-        public BroadcastHandler(int period, ILog log, IPeriodicalService periodicalService) :
-            base(nameof(BroadcastHandler), period, log)
+        public BroadcastHandler(TimeSpan period, ILog log, IPeriodicalService periodicalService) :
+            base(nameof(BroadcastHandler), (int)period.TotalMilliseconds, log)
         {
             _log = log;
             _periodicalService = periodicalService;

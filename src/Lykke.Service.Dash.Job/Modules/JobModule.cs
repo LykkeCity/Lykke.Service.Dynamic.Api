@@ -11,15 +11,16 @@ using Lykke.Service.Dash.Job.PeriodicalHandlers;
 using Lykke.Service.Dash.Api.AzureRepositories.Broadcast;
 using Lykke.Service.Dash.Job.Settings;
 using Lykke.Service.Dash.Job.Services;
+using Lykke.Common.Chaos;
 
 namespace Lykke.Service.Dash.Job.Modules
 {
-    public class ServiceModule : Module
+    public class JobModule : Module
     {
         private readonly IReloadingManager<DashJobSettings> _settings;
         private readonly ILog _log;
 
-        public ServiceModule(IReloadingManager<DashJobSettings> settings, ILog log)
+        public JobModule(IReloadingManager<DashJobSettings> settings, ILog log)
         {
             _settings = settings;
             _log = log;
@@ -28,6 +29,8 @@ namespace Lykke.Service.Dash.Job.Modules
         protected override void Load(ContainerBuilder builder)
         {
             var connectionStringManager = _settings.ConnectionString(x => x.Db.DataConnString);
+
+            builder.RegisterChaosKitty(_settings.CurrentValue.ChaosKitty);
 
             builder.RegisterInstance(_log)
                 .As<ILog>()
@@ -76,13 +79,13 @@ namespace Lykke.Service.Dash.Job.Modules
             builder.RegisterType<BalanceHandler>()
                 .As<IStartable>()
                 .AutoActivate()
-                .WithParameter("period", _settings.CurrentValue.BalanceCheckerIntervalMs)
+                .WithParameter("period", _settings.CurrentValue.BalanceCheckerInterval)
                 .SingleInstance();
 
             builder.RegisterType<BroadcastHandler>()
                 .As<IStartable>()
                 .AutoActivate()
-                .WithParameter("period", _settings.CurrentValue.BroadcastCheckerIntervalMs)
+                .WithParameter("period", _settings.CurrentValue.BroadcastCheckerInterval)
                 .SingleInstance();
         }
     }
