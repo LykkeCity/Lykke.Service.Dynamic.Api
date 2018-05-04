@@ -5,7 +5,7 @@ namespace Lykke.Service.Dash.Api.Core.Services
 {
     public interface IDashInsightClient
     {
-        Task<ulong> GetBalanceSatoshis(string address);
+        Task<decimal> GetBalance(string address, int minConfirmations);
 
         Task<long> GetLatestBlockHeight();
 
@@ -13,7 +13,7 @@ namespace Lykke.Service.Dash.Api.Core.Services
 
         Task<Tx[]> GetAddressTxs(string address, int continuation);
 
-        Task<TxUnspent[]> GetTxsUnspentAsync(string address);
+        Task<TxUnspent[]> GetTxsUnspentAsync(string address, int minConfirmations);
 
         Task<TxBroadcast> BroadcastTxAsync(string transactionHex);
     }

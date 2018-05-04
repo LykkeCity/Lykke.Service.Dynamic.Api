@@ -3,8 +3,6 @@ using Lykke.Service.Dash.Api.Core.Domain;
 using Lykke.Service.Dash.Api.Core.Domain.Broadcast;
 using Lykke.Service.Dash.Api.Core.Services;
 using Lykke.Service.Dash.Api.Core.Repositories;
-using Lykke.Service.Dash.Api.Core.Settings.ServiceSettings;
-using Lykke.Service.Dash.Api.Services.Helpers;
 using Lykke.Service.Dash.Api.Core.Domain.InsightClient;
 using NBitcoin;
 using NBitcoin.Dash;
@@ -14,7 +12,6 @@ using System;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
-using Common;
 
 namespace Lykke.Service.Dash.Api.Services
 {
@@ -24,10 +21,9 @@ namespace Lykke.Service.Dash.Api.Services
         private readonly IDashInsightClient _dashInsightClient;
         private readonly IBroadcastRepository _broadcastRepository;
         private readonly IBroadcastInProgressRepository _broadcastInProgressRepository;
-        private readonly IBalanceRepository _balanceRepository;
-        private readonly IBalancePositiveRepository _balancePositiveRepository;
         private readonly Network _network;
-        private readonly DashApiSettings _dashApiSettings;
+        private readonly decimal _fee;
+        private readonly int _minConfirmations;
 
         public DashService(ILog log,
             IDashInsightClient dashInsightClient,
@@ -35,7 +31,9 @@ namespace Lykke.Service.Dash.Api.Services
             IBroadcastInProgressRepository broadcastInProgressRepository,
             IBalanceRepository balanceRepository,
             IBalancePositiveRepository balancePositiveRepository,
-            DashApiSettings dashApiSettings)
+            string network,
+            decimal fee,
+            int minConfirmations)
         {
             DashNetworks.Register();
 
@@ -43,10 +41,9 @@ namespace Lykke.Service.Dash.Api.Services
             _dashInsightClient = dashInsightClient;
             _broadcastRepository = broadcastRepository;
             _broadcastInProgressRepository = broadcastInProgressRepository;
-            _balanceRepository = balanceRepository;
-            _balancePositiveRepository = balancePositiveRepository;
-            _dashApiSettings = dashApiSettings;
-            _network = Network.GetNetwork(_dashApiSettings.Network);
+            _network = Network.GetNetwork(network);
+            _fee = fee;
+            _minConfirmations = minConfirmations;
         }
 
         public BitcoinAddress GetBitcoinAddress(string address)
@@ -77,7 +74,7 @@ namespace Lykke.Service.Dash.Api.Services
             BitcoinAddress toAddress, decimal amount, bool includeFee)
         {
             var sendAmount = Money.FromUnit(amount, Asset.Dash.Unit);
-            var txsUnspent = await _dashInsightClient.GetTxsUnspentAsync(fromAddress.ToString());
+            var txsUnspent = await _dashInsightClient.GetTxsUnspentAsync(fromAddress.ToString(), _minConfirmations);
 
             var builder = new TransactionBuilder()
                 .Send(toAddress, sendAmount)
@@ -103,7 +100,7 @@ namespace Lykke.Service.Dash.Api.Services
                 builder.AddCoins(coin);
             }
 
-            var feeMoney = Money.FromUnit(_dashApiSettings.Fee, Asset.Dash.Unit);
+            var feeMoney = Money.FromUnit(_fee, Asset.Dash.Unit);
 
             var tx = builder
                 .SendFees(feeMoney)
@@ -139,7 +136,7 @@ namespace Lykke.Service.Dash.Api.Services
                 throw;
             }
 
-            var block = await GetLatestBlockHeight();
+            var block = await _dashInsightClient.GetLatestBlockHeight();
 
             await _broadcastRepository.AddAsync(operationId, response.Txid, block);
             await _broadcastInProgressRepository.AddAsync(operationId, response.Txid);
@@ -156,120 +153,14 @@ namespace Lykke.Service.Dash.Api.Services
             await _broadcastRepository.DeleteAsync(broadcast.OperationId);
         }
 
-        public async Task UpdateBroadcasts()
-        {
-            var list = await _broadcastInProgressRepository.GetAllAsync();
-
-            foreach (var item in list)
-            {
-                var tx = await _dashInsightClient.GetTx(item.Hash);
-                if (tx != null && tx.Confirmations >= _dashApiSettings.MinConfirmations)
-                {
-                    await _log.WriteInfoAsync(nameof(DashService), nameof(UpdateBroadcasts),
-                        new { operationId = item.OperationId, amount = tx.GetAmount(), fees = tx.Fees, blockHeight = tx.BlockHeight }.ToJson(),
-                        $"Brodcast update is detected");
-
-                    await _broadcastRepository.SaveAsCompletedAsync(item.OperationId, tx.GetAmount(),
-                        tx.Fees, tx.BlockHeight);
-                    await _broadcastInProgressRepository.DeleteAsync(item.OperationId);
-
-                    await RefreshBalances(tx);
-                }
-            }
-        }
-
-        private async Task RefreshBalances(Tx tx)
-        {
-            foreach (var address in tx.GetAddresses())
-            {
-                var balance = await _balanceRepository.GetAsync(address);
-                if (balance != null)
-                {
-                    await RefreshAddressBalance(address, true);
-                }
-            }
-        }
-
-        public async Task UpdateBalances()
-        {
-            var positiveBalances = await _balancePositiveRepository.GetAllAsync();
-            var continuation = "";
-
-            while (true)
-            {
-                var balances = await _balanceRepository.GetAsync(100, continuation);
-
-                foreach (var balance in balances.Entities)
-                {
-                    var deleteZeroBalance = positiveBalances.Any(f => f.Address == balance.Address);
-
-                    await RefreshAddressBalance(balance.Address, deleteZeroBalance);
-                }
-
-                if (string.IsNullOrEmpty(balances.ContinuationToken))
-                {
-                    break;
-                }
-
-                continuation = balances.ContinuationToken;
-            }
-        }
-
-        private async Task<decimal> RefreshAddressBalance(string address, bool deleteZeroBalance)
-        {
-            var balance = await GetAddressBalance(address);
-
-            if (balance > 0)
-            {
-                var block = await GetLatestBlockHeight();
-
-                var balancePositive = await _balancePositiveRepository.GetAsync(address);
-                if (balancePositive == null)
-                {
-                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
-                        new { address = address, balance = balance, block = block }.ToJson(),
-                        $"Positive balance is detected");
-                }
-                if (balancePositive != null && balancePositive.Amount != balance)
-                {
-                    await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
-                        new { address = address, balance = balance, oldBalance = balancePositive.Amount, block = block }.ToJson(),
-                        $"Change in positive balance is detected");
-                }
-
-                await _balancePositiveRepository.SaveAsync(address, balance, block);
-            }
-
-            if(balance == 0 && deleteZeroBalance)
-            {
-                await _log.WriteInfoAsync(nameof(DashService), nameof(RefreshAddressBalance),
-                    new { address = address }.ToJson(), 
-                    $"Zero balance is detected");
-
-                await _balancePositiveRepository.DeleteAsync(address);
-            }
-
-            return balance;
-        }
-
-        private async Task<long> GetLatestBlockHeight()
-        {
-            return await _dashInsightClient.GetLatestBlockHeight();
-        }
-
         public async Task<decimal> GetAddressBalance(string address)
         {
-            var utxos = await _dashInsightClient.GetTxsUnspentAsync(address);
-            var balance = utxos
-                .Where(f => f.Confirmations >= _dashApiSettings.MinConfirmations)
-                .Sum(f => f.Amount);
-
-            return balance;
+            return await _dashInsightClient.GetBalance(address, _minConfirmations);
         }
 
         public decimal GetFee()
         {
-            return _dashApiSettings.Fee;
+            return _fee;
         }
 
         public async Task<Tx[]> GetFromAddressTxs(string fromAddress, int take, string afterHash)

@@ -218,6 +218,17 @@
 									"});"
 								]
 							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "726274dd-3247-4b48-b891-6d49f10eed04",
+								"type": "text/javascript",
+								"exec": [
+									"console.info(\"Wait 70 secs\");",
+									"setTimeout(function(){}, 70000);"
+								]
+							}
 						}
 					],
 					"request": {
@@ -248,7 +259,8 @@
 									"equals": true
 								}
 							]
-						}
+						},
+						"description": null
 					},
 					"response": []
 				},
@@ -560,7 +572,8 @@
 								"single",
 								"{{operationId}}"
 							]
-						}
+						},
+						"description": null
 					},
 					"response": []
 				},
@@ -636,7 +649,8 @@
 									"equals": true
 								}
 							]
-						}
+						},
+						"description": null
 					},
 					"response": []
 				},
@@ -683,7 +697,8 @@
 								"broadcast",
 								"{{operationId}}"
 							]
-						}
+						},
+						"description": null
 					},
 					"response": []
 				}
@@ -752,7 +767,8 @@
 									"equals": true
 								}
 							]
-						}
+						},
+						"description": null
 					},
 					"response": []
 				},
@@ -1009,7 +1025,8 @@
 								"single",
 								"{{operationId}}"
 							]
-						}
+						},
+						"description": null
 					},
 					"response": []
 				},
@@ -1088,7 +1105,8 @@
 									"equals": true
 								}
 							]
-						}
+						},
+						"description": null
 					},
 					"response": []
 				},
@@ -1135,7 +1153,8 @@
 								"broadcast",
 								"{{operationId}}"
 							]
-						}
+						},
+						"description": null
 					},
 					"response": []
 				}

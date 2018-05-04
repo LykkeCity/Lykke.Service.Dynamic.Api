@@ -2,27 +2,27 @@
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using Lykke.Service.Dash.Api.Core.Services;
+using Lykke.Service.Dash.Job.Services;
 
-namespace Lykke.Service.Dash.Api.PeriodicalHandlers
+namespace Lykke.Service.Dash.Job.PeriodicalHandlers
 {
     public class BroadcastHandler : TimerPeriod
     {
         private ILog _log;
-        private IDashService _dashService;
+        private IPeriodicalService _periodicalService;
 
-        public BroadcastHandler(int period, ILog log, IDashService dashService) :
-            base(nameof(BroadcastHandler), period, log)
+        public BroadcastHandler(TimeSpan period, ILog log, IPeriodicalService periodicalService) :
+            base(nameof(BroadcastHandler), (int)period.TotalMilliseconds, log)
         {
             _log = log;
-            _dashService = dashService;
+            _periodicalService = periodicalService;
         }
 
         public override async Task Execute()
         {
             try
             {
-                await _dashService.UpdateBroadcasts();
+                await _periodicalService.UpdateBroadcasts();
             }
             catch (Exception ex)
             {

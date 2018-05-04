@@ -8,8 +8,8 @@ using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
 using Lykke.Service.Dash.Api.Core.Services;
-using Lykke.Service.Dash.Api.Core.Settings;
-using Lykke.Service.Dash.Api.Modules;
+using Lykke.Service.Dash.Job.Settings;
+using Lykke.Service.Dash.Job.Modules;
 using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
 using Lykke.Service.BlockchainApi.Contract;
@@ -19,8 +19,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using Lykke.Logs.Slack;
 
-namespace Lykke.Service.Dash.Api
+namespace Lykke.Service.Dash.Job
 {
     public class Startup
     {
@@ -53,7 +54,7 @@ namespace Lykke.Service.Dash.Api
 
                 services.AddSwaggerGen(options =>
                 {
-                    options.DefaultLykkeConfiguration("v1", "Dash.Api");
+                    options.DefaultLykkeConfiguration("v1", "Dash.Job");
                     options.DescribeAllEnumsAsStrings();
                     options.DescribeStringEnumsInCamelCase();
                 });
@@ -62,7 +63,7 @@ namespace Lykke.Service.Dash.Api
                 var appSettings = Configuration.LoadSettings<AppSettings>();
                 Log = CreateLogWithSlack(services, appSettings);
 
-                builder.RegisterModule(new ServiceModule(appSettings.Nested(x => x.DashApiService), Log));
+                builder.RegisterModule(new JobModule(appSettings.Nested(x => x.DashJob), Log));
                 builder.Populate(services);
                 ApplicationContainer = builder.Build();
 
@@ -84,7 +85,7 @@ namespace Lykke.Service.Dash.Api
                     app.UseDeveloperExceptionPage();
                 }
 
-                app.UseLykkeMiddleware("Dash.Api", ex => BlockchainErrorResponse.FromUnknownError(ex.ToString()), logClientErrors: true);
+                app.UseLykkeMiddleware("Dash.Job", ex => BlockchainErrorResponse.FromUnknownError(ex.ToString()), logClientErrors: true);
 
                 app.UseMvc();
 
@@ -170,7 +171,7 @@ namespace Lykke.Service.Dash.Api
 
             aggregateLogger.AddLog(consoleLogger);
 
-            var dbLogConnectionStringManager = settings.Nested(x => x.DashApiService.Db.LogsConnString);
+            var dbLogConnectionStringManager = settings.Nested(x => x.DashJob.Db.LogsConnString);
             var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
 
             if (string.IsNullOrEmpty(dbLogConnectionString))
@@ -183,7 +184,7 @@ namespace Lykke.Service.Dash.Api
                 throw new InvalidOperationException($"LogsConnString {dbLogConnectionString} is not filled in settings");
 
             var persistenceManager = new LykkeLogToAzureStoragePersistenceManager(
-                AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, "DashApiLog", consoleLogger),
+                AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, "DashJobLog", consoleLogger),
                 consoleLogger);
 
             // Creating slack notification service, which logs own azure queue processing messages to aggregate log
@@ -204,6 +205,18 @@ namespace Lykke.Service.Dash.Api
             azureStorageLogger.Start();
 
             aggregateLogger.AddLog(azureStorageLogger);
+            aggregateLogger.AddLog(LykkeLogToSlack.Create
+            (
+                slackService,
+                "BlockChainIntegration",
+                LogLevel.All
+            ));
+            aggregateLogger.AddLog(LykkeLogToSlack.Create
+            (
+                slackService,
+                "BlockChainIntegrationImportantMessages",
+                LogLevel.All ^ LogLevel.Info
+            ));
 
             return aggregateLogger;
         }
