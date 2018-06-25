@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>Lykke.Service.Dynamic.Api.Core</AssemblyName>
+    <RootNamespace>Lykke.Service.Dynamic.Api.Core</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lykke.Common" Version="4.2.0" />
+    <PackageReference Include="NBitcoin" Version="4.0.0.52" />
+  </ItemGroup>
+
+</Project>

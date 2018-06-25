@@ -59,4 +59,4 @@ node_modules
 **/launchSettings.json
 **/appsettings.*.json
 
-/tests/Lykke.Service.Dash.Api.Tests/Postman/dev.postman_environment.json
+/tests/Lykke.Service.Dynamic.Api.Tests/Postman/dev.postman_environment.json

@@ -1,1 +1,1 @@
-# Lykke.Service.Dash.Api
+# Lykke.Service.Dynamic.Api
