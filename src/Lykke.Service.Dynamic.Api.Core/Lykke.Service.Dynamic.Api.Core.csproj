@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Lykke.Common" Version="4.2.0" />
-    <PackageReference Include="NBitcoin" Version="4.0.0.52" />
+    <PackageReference Include="NBitcoin" Version="4.0.0.40" />
   </ItemGroup>
 
 </Project>

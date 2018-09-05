@@ -14,7 +14,8 @@ namespace Lykke.Service.Dynamic.Job.Services
     {
         private ILog _log;
         private readonly IChaosKitty _chaosKitty;
-        private readonly IDynamicInsightClient _dynamicInsightClient;
+        //private readonly IDynamicInsightClient _dynamicInsightClient;
+        private readonly IDynamicDaemonClient _dynamicDaemonClient;
         private readonly IBroadcastRepository _broadcastRepository;
         private readonly IBroadcastInProgressRepository _broadcastInProgressRepository;
         private readonly IBalanceRepository _balanceRepository;
@@ -23,7 +24,8 @@ namespace Lykke.Service.Dynamic.Job.Services
 
         public PeriodicalService(ILog log,
             IChaosKitty chaosKitty,
-            IDynamicInsightClient dynamicInsightClient,
+            //IDynamicInsightClient dynamicInsightClient,
+            IDynamicDaemonClient dynamicDaemonClient,
             IBroadcastRepository broadcastRepository,
             IBroadcastInProgressRepository broadcastInProgressRepository,
             IBalanceRepository balanceRepository,
@@ -32,7 +34,8 @@ namespace Lykke.Service.Dynamic.Job.Services
         {
             _log = log.CreateComponentScope(nameof(PeriodicalService));
             _chaosKitty = chaosKitty;
-            _dynamicInsightClient = dynamicInsightClient;
+            //_dynamicInsightClient = dynamicInsightClient;
+            _dynamicDaemonClient = dynamicDaemonClient;
             _broadcastRepository = broadcastRepository;
             _broadcastInProgressRepository = broadcastInProgressRepository;
             _balanceRepository = balanceRepository;
@@ -46,7 +49,7 @@ namespace Lykke.Service.Dynamic.Job.Services
 
             foreach (var item in list)
             {
-                var tx = await _dynamicInsightClient.GetTx(item.Hash);
+                var tx = await _dynamicDaemonClient.GetTx(item.Hash);
                 if (tx != null && tx.Confirmations >= _minConfirmations)
                 {
                     _log.WriteInfo(nameof(UpdateBroadcasts),
@@ -106,11 +109,11 @@ namespace Lykke.Service.Dynamic.Job.Services
 
         private async Task<decimal> RefreshAddressBalance(string address, bool deleteZeroBalance)
         {
-            var balance = await _dynamicInsightClient.GetBalance(address, _minConfirmations);
+            var balance = await _dynamicDaemonClient.GetBalance(address, _minConfirmations);
 
             if (balance > 0)
             {
-                var block = await _dynamicInsightClient.GetLatestBlockHeight();
+                var block = await _dynamicDaemonClient.GetLatestBlockHeight();
 
                 var balancePositive = await _balancePositiveRepository.GetAsync(address);
                 if (balancePositive == null)
