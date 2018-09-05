@@ -72,6 +72,11 @@ namespace Lykke.Service.Dynamic.Api.Modules
                 .WithParameter("url", _settings.CurrentValue.InsightApiUrl)
                 .SingleInstance();
 
+            builder.RegisterType<DynamicDaemonClient>()
+                .As<IDynamicDaemonClient>()
+                .WithParameter("datadir", _settings.CurrentValue.DaemonDataDir)
+                .SingleInstance();
+
             builder.RegisterType<DynamicService>()
                 .As<IDynamicService>()
                 .WithParameter("network", _settings.CurrentValue.Network)

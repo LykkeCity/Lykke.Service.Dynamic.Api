@@ -19,6 +19,7 @@ namespace Lykke.Service.Dynamic.Api.Services
     {
         private readonly ILog _log;
         private readonly IDynamicInsightClient _dynamicInsightClient;
+        private readonly IDynamicDaemonClient _dynamicDaemonClient;
         private readonly IBroadcastRepository _broadcastRepository;
         private readonly IBroadcastInProgressRepository _broadcastInProgressRepository;
         private readonly Network _network;
@@ -27,6 +28,7 @@ namespace Lykke.Service.Dynamic.Api.Services
 
         public DynamicService(ILog log,
             IDynamicInsightClient dynamicInsightClient,
+            IDynamicDaemonClient dynamicDaemonClient,
             IBroadcastRepository broadcastRepository,
             IBroadcastInProgressRepository broadcastInProgressRepository,
             IBalanceRepository balanceRepository,
@@ -39,6 +41,7 @@ namespace Lykke.Service.Dynamic.Api.Services
 
             _log = log;
             _dynamicInsightClient = dynamicInsightClient;
+            _dynamicDaemonClient = dynamicDaemonClient;
             _broadcastRepository = broadcastRepository;
             _broadcastInProgressRepository = broadcastInProgressRepository;
             _network = Network.GetNetwork(network);

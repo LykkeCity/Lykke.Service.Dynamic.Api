@@ -9,6 +9,7 @@ namespace Lykke.Service.Dynamic.Job.Settings
     {
         public DbSettings Db { get; set; }
         public string InsightApiUrl { get; set; }
+        public string DaemonDataDir { get; set; }
         public int MinConfirmations { get; set; }
         public TimeSpan BalanceCheckerInterval { get; set; }
         public TimeSpan BroadcastCheckerInterval { get; set; }
