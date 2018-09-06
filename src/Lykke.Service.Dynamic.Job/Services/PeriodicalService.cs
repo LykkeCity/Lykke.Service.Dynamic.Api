@@ -14,7 +14,6 @@ namespace Lykke.Service.Dynamic.Job.Services
     {
         private ILog _log;
         private readonly IChaosKitty _chaosKitty;
-        //private readonly IDynamicInsightClient _dynamicInsightClient;
         private readonly IDynamicDaemonClient _dynamicDaemonClient;
         private readonly IBroadcastRepository _broadcastRepository;
         private readonly IBroadcastInProgressRepository _broadcastInProgressRepository;
@@ -24,7 +23,6 @@ namespace Lykke.Service.Dynamic.Job.Services
 
         public PeriodicalService(ILog log,
             IChaosKitty chaosKitty,
-            //IDynamicInsightClient dynamicInsightClient,
             IDynamicDaemonClient dynamicDaemonClient,
             IBroadcastRepository broadcastRepository,
             IBroadcastInProgressRepository broadcastInProgressRepository,
@@ -34,7 +32,6 @@ namespace Lykke.Service.Dynamic.Job.Services
         {
             _log = log.CreateComponentScope(nameof(PeriodicalService));
             _chaosKitty = chaosKitty;
-            //_dynamicInsightClient = dynamicInsightClient;
             _dynamicDaemonClient = dynamicDaemonClient;
             _broadcastRepository = broadcastRepository;
             _broadcastInProgressRepository = broadcastInProgressRepository;
