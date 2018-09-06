@@ -28,21 +28,27 @@ namespace Lykke.Service.Dynamic.Api.Services
         private const string _rpcPasswordPrefix = "rpcpassword=";
         private const string _rpcPortPrefix = "rpcport=";
         private const string _testNetPrefix = "testnet=1";
+        private const string _testTxIndexOff = "txindex=0";
+        private const string _testAddressIndexOn = "addressindex=1";
+        private const string _testTimeStampIndexOn = "timestampindex=1";
+        private const string _testSpentIndexOn = "spentindex=1";
+        private const string _testServerOn = "server=1";
+        private const string _testDaemonOn = "daemon=1";
+        private DynamicRPCClient rpc;
         private string _userName;
         private string _password;
         private uint _rpcPort;
         private string _network;
-        private DynamicRPCDynamicClient rpc;
         private int nBlockHeight = 0;
+        private bool TxIndexOff = false;
+        private bool AddressIndexOn = false;
+        private bool TimeStampIndexOn = false;
+        private bool SpentIndexOn = false;
+        private bool ServerOn = false;
+        private bool DaemonOn = false;
         /*
          * TODO:
          * make sure tx, address, timestamp and spent indexing are turned on.
-         * txindex=1
-         * addressindex=1
-         * timestampindex=1
-         * spentindex=1
-         * server=1
-         * daemon=1
         */
         public DynamicDaemonClient(ILog log, string datadir)
         {
@@ -88,6 +94,30 @@ namespace Lykke.Service.Dynamic.Api.Services
                             {
                                 _network = "testnet";
                             }
+                            else if (configLine.Length == _testAddressIndexOn.Length && configLine == _testAddressIndexOn)
+                            {
+                                AddressIndexOn = true;
+                            }
+                            else if (configLine.Length == _testTimeStampIndexOn.Length && configLine == _testTimeStampIndexOn)
+                            {
+                                TimeStampIndexOn = true;
+                            }
+                            else if (configLine.Length == _testSpentIndexOn.Length && configLine == _testSpentIndexOn)
+                            {
+                                SpentIndexOn = true;
+                            }
+                            else if (configLine.Length == _testServerOn.Length && configLine == _testServerOn)
+                            {
+                                ServerOn = true;
+                            }
+                            else if (configLine.Length == _testDaemonOn.Length && configLine == _testDaemonOn)
+                            {
+                                DaemonOn = true;
+                            }
+                            else if (configLine.Length == _testTxIndexOff.Length && configLine == _testTxIndexOff)
+                            {
+                                TxIndexOff = true;
+                            }
                         }
                     }
                 }
@@ -96,22 +126,45 @@ namespace Lykke.Service.Dynamic.Api.Services
             {
                 throw new Exception($"Failed to get read configuration file.", ex);
             }
+            if (TxIndexOff)
+            {
+                throw new Exception($"Dynamic wallet needs to have txindex on in the config file (txindex=1).");
+            }
+            if (!AddressIndexOn)
+            {
+                throw new Exception($"Dynamic wallet needs to have addressindex on in the config file (addressindex=1).");
+            }
+            if (!TimeStampIndexOn)
+            {
+                throw new Exception($"Dynamic wallet needs to have timestampindex on in the config file (timestampindex=1).");
+            }
+            if (!SpentIndexOn)
+            {
+                throw new Exception($"Dynamic wallet needs to have spendindex on in the config file (spendindex=1).");
+            }
+            if (!ServerOn)
+            {
+                throw new Exception($"Dynamic wallet needs to have server on in the config file (server=1).");
+            }
+            if (!DaemonOn)
+            {
+                throw new Exception($"Dynamic wallet needs to have daemon on in the config file (daemon=1).");
+            }
         }
 
         private void InitRPC()
         {
             NetworkCredential credential = new NetworkCredential(_userName, _password);
-            NBitcoin.Network net = NBitcoin.Network.GetNetwork(_network);
+            Network net = Network.GetNetwork(_network);
             RPCCredentialString creds = new RPCCredentialString();
             creds.Server = "http://127.0.0.1:" + Convert.ToUInt32(_rpcPort);
             creds.UserPassword = credential;
-            rpc = new DynamicRPCDynamicClient(creds, net);
+            rpc = new DynamicRPCClient(creds, net);
         }
 
         public async Task<decimal> GetBalance(string address, int minConfirmations)
         {
-            var utxos = await GetTxsUnspentAsync(address, minConfirmations);
-
+            var utxos = await GetTxsUnspentAsync(address, minConfirmations); 
             return utxos.Sum(f => f.Amount);
         }
 
@@ -130,41 +183,10 @@ namespace Lykke.Service.Dynamic.Api.Services
             return height;
         }
 
-        Tx ConvertTransactionToTx(Transaction transaction)
+        int GetCurrentEpochTime()
         {
-            if (transaction == null)
-                return null;
-
-            Tx tx = new Tx();
-            Coin[] spentCoins = null;
-            Money amount = transaction.GetFee(spentCoins);
-            tx.Fees = amount.ToDecimal(MoneyUnit.BTC);
-            //tx.BlockHeight = ;
-            //tx.Time = ;
-            tx.Confirmations = nBlockHeight - tx.BlockHeight;
-            tx.Txid = transaction.GetHash().ToString();
-            tx.TxLock = (transaction.LockTime > 0) ? true : false;
-            int i = 0;
-            foreach(TxIn txIn in transaction.Inputs)
-            {
-                TxVin vin = new TxVin();
-                vin.Txid = txIn.GetHashCode().ToString();
-                //vin.Value = txIn.value;
-                //vin.Addr = txIn.Address;
-                tx.Vin.SetValue(vin, i);
-                i++;
-            }
-            i = 0;
-            foreach (TxOut txOut in transaction.Outputs)
-            {
-                TxVout vout = new TxVout();
-                vout.Txid = txOut.GetHashCode().ToString();
-                //vout.ScriptPubKey = txOut.ScriptPubKey.ToString();
-                vout.Value = txOut.Value.ToDecimal(MoneyUnit.BTC);
-                tx.Vout.SetValue(vout, i);
-                i++;
-            }
-            return tx;
+            TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
+            return (int)t.TotalSeconds;
         }
 
         public async Task<Tx> GetTx(string txid)
@@ -172,108 +194,97 @@ namespace Lykke.Service.Dynamic.Api.Services
             Tx tx;
             try
             {
-                uint256 uintTxId = new uint256(txid);
-                Transaction transaction;
-                transaction = await rpc.GetRawTransactionAsync(uintTxId);
-                tx = ConvertTransactionToTx(transaction);
+                JsonTransaction jsonTx = await rpc.GetTransactionAsync(txid);
+                int height = await rpc.GetBlockCountAsync();
+                tx = LoadTxFromRPCJson(jsonTx, height);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to get last block height.", ex);
+                throw new Exception($"Failed to get transaction '{txid}'.", ex);
             }
+            return tx;
+        }
+
+        private Tx LoadTxFromRPCJson(JsonTransaction jsonResponse, int blockHeight)
+        {
+            Tx tx = new Tx();
+            NBitcoin.Dynamic.RPC.Transaction rpcTransaction = jsonResponse.result;
+            tx.BlockHeight = rpcTransaction.height;
+            tx.Confirmations = blockHeight - rpcTransaction.height;
+            
+            tx.Time = rpcTransaction.time;
+            tx.Txid = rpcTransaction.txid;
+            tx.TxLock = rpcTransaction.locktime > GetCurrentEpochTime() ? true : false;
+            // popluate vin
+            double inSatoshis = 0;
+            List<TxVin> listTxVin = new List<TxVin>();
+            foreach (Vin input in rpcTransaction.vin)
+            {
+                TxVin txIn = new TxVin();
+                txIn.Addr = input.address;
+                txIn.Txid = input.txid;
+                txIn.Value = (decimal)input.value; 
+                inSatoshis = inSatoshis + input.value;
+                listTxVin.Add(txIn);
+            }
+            tx.Vin = listTxVin.ToArray();
+            // popluate vout
+            double outSatoshis = 0;
+            List<TxVout> listTxVout = new List<TxVout>();
+            foreach (Vout output in rpcTransaction.vout)
+            {
+                TxVout txOut = new TxVout();
+                List<string> addresses = new List<string>();
+                foreach (string address in output.scriptPubKey.addresses)
+                {
+                    addresses.Add(address);
+                }
+                txOut.ScriptPubKey.Addresses = addresses.ToArray();
+                txOut.Txid = output.scriptPubKey.hex;
+                txOut.Value = (decimal)output.value;
+                outSatoshis = outSatoshis + output.value;
+                listTxVout.Add(txOut);
+            }
+            tx.Vout = listTxVout.ToArray();
+            tx.Fees = (decimal)(inSatoshis - outSatoshis);
             return tx;
         }
 
         public async Task<Tx[]> GetAddressTxs(string address, int continuation)
         {
-            AddressTxs addressTxs;
-            var start = continuation;
-            var end = start + 50;
-            var url = $"{_url}/addrs/{address}/txs?from={start}&to={end}";
-
+            // TODO: implement continuation
+            List<Tx> listTxs = new List<Tx>();
             try
             {
-                addressTxs = await GetJson<AddressTxs>(url);
+                JsonAddressTxIDs jsonAddressTxIDs = await rpc.GetAddressTxIDsAsync(address);
+                foreach (string txid in jsonAddressTxIDs.result)
+                {
+                    JsonTransaction jsonTx = await rpc.GetTransactionAsync(txid);
+                    //listTxs.Add(jsonTx);
+                }
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to get {nameof(AddressTxs)} for url='{url}'", ex);
+                throw new Exception($"Failed to get address transaction ids for '{address}'.", ex);
             }
-
-            if (addressTxs == null)
-            {
-                throw new Exception($"{nameof(addressTxs)} can not be null");
-            }
-
-            return addressTxs.Items;
+            return listTxs.ToArray();
         }
 
-        private TxUnspent[] LoadTxUnspentFromJsonString(string jsonResponse, int blockHeight)
+        private TxUnspent[] LoadTxUnspentFromRPCJson(JsonUTXOs jsonResponse, int blockHeight)
         {
-            
-            TxUnspent[] txUnspents;
-            JsonTextReader reader = new JsonTextReader(new StringReader(jsonResponse));
-            bool dataArrayStarted = false;
-            string nextValue = "";
             List<TxUnspent> listTxUnspent = new List<TxUnspent>();
-            TxUnspent addTxUnspent = new TxUnspent();
-            while (reader.Read())
+            foreach(UTXO utxo in jsonResponse.result)
             {
-                if (!dataArrayStarted && reader.TokenType == JsonToken.StartArray)
-                {
-                    dataArrayStarted = true;
-                }
-                else if (dataArrayStarted && reader.TokenType == JsonToken.PropertyName && reader.Value != null)
-                {
-                    nextValue = reader.Value.ToString();
-                }
-                else if (dataArrayStarted && reader.Value != null && (reader.TokenType == JsonToken.String || reader.TokenType == JsonToken.Integer))
-                {
-                    if (nextValue == "address")
-                    {
-                        addTxUnspent = new TxUnspent();
-                    }
-                    else if (nextValue == "txid")
-                    {
-                        addTxUnspent.Txid = reader.Value.ToString();
-                    }
-                    else if (nextValue == "outputIndex")
-                    {
-                        string outputIndex = reader.Value.ToString();
-                        uint vout;
-                        if (uint.TryParse(outputIndex, out vout))
-                        {
-                            addTxUnspent.Vout = vout;
-                        }
-                    }
-                    else if (nextValue == "script")
-                    {
-                        addTxUnspent.ScriptPubKey = reader.Value.ToString();
-                    }
-                    else if (nextValue == "satoshis")
-                    {
-                        string strSatoshis = reader.Value.ToString();
-                        ulong satoshis;
-                        if (ulong.TryParse(strSatoshis, out satoshis))
-                        {
-                            addTxUnspent.Satoshis = satoshis;
-                            addTxUnspent.Amount = (decimal)satoshis/COIN;
-                        }
-                    }
-                    else if (nextValue == "height")
-                    {
-                        string strHeight = reader.Value.ToString();
-                        int height;
-                        if (int.TryParse(strHeight, out height))
-                        {
-                            addTxUnspent.Confirmations = blockHeight - height;
-                        }
-                        listTxUnspent.Add(addTxUnspent);
-                    }
-                }
+                TxUnspent TxUnspent = new TxUnspent();
+                TxUnspent.Amount = (decimal)utxo.satoshis / COIN;
+                TxUnspent.Confirmations = blockHeight - utxo.height;
+                TxUnspent.ScriptPubKey = utxo.script;
+                TxUnspent.Satoshis = utxo.satoshis;
+                TxUnspent.Txid = utxo.txid;
+                TxUnspent.Vout = utxo.outputIndex;
+                listTxUnspent.Add(TxUnspent);
             }
-            txUnspents = listTxUnspent.ToArray();
-            return txUnspents;
+            return listTxUnspent.ToArray();
         }
 
         public async Task<TxUnspent[]> GetTxsUnspentAsync(string address, int minConfirmations)
@@ -282,8 +293,8 @@ namespace Lykke.Service.Dynamic.Api.Services
             TxUnspent[] txsUnspent;
             try
             {
-                string jsonResponse = await rpc.GetAddressUTXOsAsync(address, minConfirmations);
-                txsUnspent = LoadTxUnspentFromJsonString(jsonResponse, (int)nCurrentHeight);
+                JsonUTXOs jsonResponse = await rpc.GetAddressUTXOsAsync(address);
+                txsUnspent = LoadTxUnspentFromRPCJson(jsonResponse, (int)nCurrentHeight);
             }
             catch (Exception ex)
             {
@@ -292,7 +303,7 @@ namespace Lykke.Service.Dynamic.Api.Services
 
             if (txsUnspent == null)
             {
-                return new TxUnspent[] { };
+                return new List<TxUnspent>().ToArray();
             }
 
             return txsUnspent.Where(f => f.Confirmations >= minConfirmations).ToArray();
@@ -312,21 +323,6 @@ namespace Lykke.Service.Dynamic.Api.Services
             {
                 throw new Exception($"Failed to get {nameof(TxUnspent)}[] for url='{transactionHex}'", ex);
             }
-        }
-
-        private async Task<T> GetJson<T>(string url, int tryCount = 3)
-        {
-            bool NeedToRetryException(Exception ex)
-            {
-                if (ex is FlurlHttpException flurlException)
-                {
-                    return true;
-                }
-
-                return false;
-            }
-
-            return await Retry.Try(() => url.GetJsonAsync<T>(), NeedToRetryException, tryCount, _log, 100);
         }
     }
 }
