@@ -256,11 +256,13 @@ namespace Lykke.Service.Dynamic.Api.Services
             List<Tx> listTxs = new List<Tx>();
             try
             {
+                int height = await rpc.GetBlockCountAsync();
                 JsonAddressTxIDs jsonAddressTxIDs = await rpc.GetAddressTxIDsAsync(address);
                 foreach (string txid in jsonAddressTxIDs.result)
                 {
                     JsonTransaction jsonTx = await rpc.GetTransactionAsync(txid);
-                    //listTxs.Add(jsonTx);
+                    Tx tx = LoadTxFromRPCJson(jsonTx, height);
+                    listTxs.Add(tx);
                 }
             }
             catch (Exception ex)
