@@ -183,6 +183,14 @@ namespace Lykke.Service.Dynamic.Api.Services
             return height;
         }
 
+        bool IsLockTimeEpoch(int nLockTime)
+        {
+            if (nLockTime > 1536300350)
+                return true;
+
+            return false;
+        }
+
         int GetCurrentEpochTime()
         {
             TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
@@ -214,7 +222,17 @@ namespace Lykke.Service.Dynamic.Api.Services
             
             tx.Time = rpcTransaction.time;
             tx.Txid = rpcTransaction.txid;
-            tx.TxLock = rpcTransaction.locktime > GetCurrentEpochTime() ? true : false;
+            if (IsLockTimeEpoch(rpcTransaction.locktime)) 
+            {
+                // locktime = epoch time
+                tx.TxLock = rpcTransaction.locktime > GetCurrentEpochTime() ? true : false;
+            }
+            else
+            {
+                // locktime = block height
+                tx.TxLock = rpcTransaction.locktime > blockHeight ? true : false;
+            }
+            
             // popluate vin
             double inSatoshis = 0;
             List<TxVin> listTxVin = new List<TxVin>();
