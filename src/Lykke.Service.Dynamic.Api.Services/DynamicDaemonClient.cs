@@ -20,7 +20,6 @@ namespace Lykke.Service.Dynamic.Api.Services
     {
         private readonly ILog _log;
         private readonly string _datadir;
-        private readonly string _url;
 
         private const decimal COIN = 100000000;
         private const string _configFileName = "dynamic.conf";
@@ -37,7 +36,7 @@ namespace Lykke.Service.Dynamic.Api.Services
         private DynamicRPCClient rpc;
         private string _userName;
         private string _password;
-        private uint _rpcPort;
+        private uint _rpcPort = 33350;
         private string _network;
         private int nBlockHeight = 0;
         private bool TxIndexOff = false;
@@ -46,6 +45,7 @@ namespace Lykke.Service.Dynamic.Api.Services
         private bool SpentIndexOn = false;
         private bool ServerOn = false;
         private bool DaemonOn = false;
+        private bool RPCPortSet = false;
         /*
          * TODO:
          * make sure tx, address, timestamp and spent indexing are turned on.
@@ -54,7 +54,6 @@ namespace Lykke.Service.Dynamic.Api.Services
         {
             _log = log;
             _datadir = datadir;
-            _url = "";
             _network = "main";
             ReadConfigFile();
             InitRPC();
@@ -89,6 +88,7 @@ namespace Lykke.Service.Dynamic.Api.Services
                                     throw new Exception("Can not convert RPC port to an unsigned integer");
                                 }
                                 _rpcPort = port;
+                                RPCPortSet = true;
                             }
                             else if (configLine.Length == _testNetPrefix.Length && configLine == _testNetPrefix)
                             {
@@ -124,31 +124,35 @@ namespace Lykke.Service.Dynamic.Api.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to get read configuration file.", ex);
+                throw new Exception($"Failed to read dynamic.conf file.", ex);
             }
             if (TxIndexOff)
             {
-                throw new Exception($"Dynamic wallet needs to have txindex on in the config file (txindex=1).");
+                throw new Exception($"Dynamic wallet needs to have txindex on in the dynamic.conf file (txindex=1).");
             }
             if (!AddressIndexOn)
             {
-                throw new Exception($"Dynamic wallet needs to have addressindex on in the config file (addressindex=1).");
+                throw new Exception($"Dynamic wallet needs to have addressindex on in the dynamic.conf file (addressindex=1).");
             }
             if (!TimeStampIndexOn)
             {
-                throw new Exception($"Dynamic wallet needs to have timestampindex on in the config file (timestampindex=1).");
+                throw new Exception($"Dynamic wallet needs to have timestampindex on in the dynamic.conf file (timestampindex=1).");
             }
             if (!SpentIndexOn)
             {
-                throw new Exception($"Dynamic wallet needs to have spendindex on in the config file (spendindex=1).");
+                throw new Exception($"Dynamic wallet needs to have spendindex on in the dynamic.conf file (spendindex=1).");
             }
             if (!ServerOn)
             {
-                throw new Exception($"Dynamic wallet needs to have server on in the config file (server=1).");
+                throw new Exception($"Dynamic wallet needs to have server on in the dynamic.conf file (server=1).");
             }
             if (!DaemonOn)
             {
-                throw new Exception($"Dynamic wallet needs to have daemon on in the config file (daemon=1).");
+                throw new Exception($"Dynamic wallet needs to have daemon on in the dynamic.conf file (daemon=1).");
+            }
+            if (!RPCPortSet)
+            {
+                throw new Exception($"Dynamic wallet needs to have the RPC port set in the dynamic.conf file (rpcport=33350).");
             }
         }
 
