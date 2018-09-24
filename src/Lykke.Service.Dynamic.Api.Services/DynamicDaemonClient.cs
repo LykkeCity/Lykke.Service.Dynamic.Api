@@ -257,11 +257,14 @@ namespace Lykke.Service.Dynamic.Api.Services
                 {
                     addresses.Add(address);
                 }
-                txOut.ScriptPubKey.Addresses = addresses.ToArray();
-                txOut.Txid = output.scriptPubKey.hex;
-                txOut.Value = (decimal)output.value;
-                outSatoshis = outSatoshis + output.value;
-                listTxVout.Add(txOut);
+                if (addresses.Count() > 0) {
+                    txOut.ScriptPubKey = new Core.Domain.InsightClient.ScriptPubKey();
+                    txOut.ScriptPubKey.Addresses = addresses.ToArray();
+                    txOut.Txid = output.scriptPubKey.hex;
+                    txOut.Value = (decimal)output.value;
+                    outSatoshis = outSatoshis + output.value;
+                    listTxVout.Add(txOut);
+                }
             }
             tx.Vout = listTxVout.ToArray();
             tx.Fees = (decimal)(inSatoshis - outSatoshis);
@@ -270,7 +273,7 @@ namespace Lykke.Service.Dynamic.Api.Services
 
         public async Task<Tx[]> GetAddressTxs(string address, int continuation)
         {
-            // TODO: implement continuation
+            int counter = 1;
             List<Tx> listTxs = new List<Tx>();
             try
             {
@@ -278,9 +281,13 @@ namespace Lykke.Service.Dynamic.Api.Services
                 JsonAddressTxIDs jsonAddressTxIDs = await rpc.GetAddressTxIDsAsync(address);
                 foreach (string txid in jsonAddressTxIDs.result)
                 {
-                    JsonTransaction jsonTx = await rpc.GetTransactionAsync(txid);
-                    Tx tx = LoadTxFromRPCJson(jsonTx, height);
-                    listTxs.Add(tx);
+                    if (counter > continuation)
+                    {
+                        JsonTransaction jsonTx = await rpc.GetTransactionAsync(txid);
+                        Tx tx = LoadTxFromRPCJson(jsonTx, height);
+                        listTxs.Add(tx);
+                    }
+                    counter++;
                 }
             }
             catch (Exception ex)
