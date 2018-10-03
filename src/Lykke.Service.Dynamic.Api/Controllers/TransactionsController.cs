@@ -223,6 +223,23 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             return Ok(txs.Select(f => f.ToHistoricalTransactionContract(address, true)));
         }
 
+        [HttpGet("history/to/{address}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HistoricalTransactionContract[]))]
+        public async Task<IActionResult> GetHistoryToAddress([Required] string address,
+            [Required, FromQuery] int take,
+            [FromQuery] string afterHash)
+        {
+            var dynamicAddress = _dynamicService.GetBitcoinAddress(address);
+            if (dynamicAddress == null)
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
+            }
+
+            var txs = await _dynamicService.GetToAddressTxs(address, take, afterHash);
+            //mark added false to the below to set "isFrom" flag in extension.cs\ToHistoricalTransactionContract
+            return Ok(txs.Select(f => f.ToHistoricalTransactionContract(address, false)));
+        }
+
         [HttpDelete("history/from/{address}/observation")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult DeleteObservationFromAddress([Required] string address)

@@ -26,5 +26,8 @@ namespace Lykke.Service.Dynamic.Api.Services
         decimal GetFee();
 
         Task<Tx[]> GetFromAddressTxs(string fromAddress, int take, string afterHash);
+        //public async Task<Tx[]> GetAddressTxs(string address, int continuation)
+        Task<Tx[]> GetToAddressTxs(string toAddress, int take, string afterHash);
+
     }
 }

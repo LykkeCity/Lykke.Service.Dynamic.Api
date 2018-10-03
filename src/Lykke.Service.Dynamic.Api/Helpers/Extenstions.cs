@@ -101,7 +101,7 @@ namespace Lykke.Service.Dynamic.Api.Helpers
             if (isFrom)
             {
                 var vouts = self.Vout.Where(f => !f.ScriptPubKey.Addresses.Contains(address));
-                var toAddresses = new List<string>();
+                var toAddresses = new List<string>();               
 
                 foreach (var vout in vouts)
                 {
@@ -121,7 +121,22 @@ namespace Lykke.Service.Dynamic.Api.Helpers
             }
             else
             {
-                toAddress = address;
+               
+            var vins = self.Vin.Where(f => !f.Addr.Contains(address));
+            var toAddresses = new List<string>();
+
+            foreach (var vin in vins)
+            {
+                    if (!toAddresses.Contains(vin.Addr))
+                    {
+                        toAddresses.Add(vin.Addr);
+                    }
+            }
+               
+                fromAddress = toAddresses.FirstOrDefault();
+                //toAddress = $"{{ {string.Join(",", toAddresses)} }}";
+                toAddress = address;  
+                amount = vins.Sum(f => f.Value);
             }
 
             return new HistoricalTransactionContract
@@ -132,7 +147,9 @@ namespace Lykke.Service.Dynamic.Api.Helpers
                 ToAddress = toAddress,
                 Hash = self.Txid,
                 OperationId = Guid.Empty,
-                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(self.Time).DateTime.ToUniversalTime()
+                //mark schroeder 20181002 Dyn uses seconds and not milliseconds. 
+                //Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(self.Time).DateTime.ToUniversalTime()
+                Timestamp = DateTimeOffset.FromUnixTimeSeconds(self.Time).DateTime.ToUniversalTime()
             };
         }
     }

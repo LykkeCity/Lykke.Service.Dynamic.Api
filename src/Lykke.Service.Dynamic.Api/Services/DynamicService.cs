@@ -198,7 +198,44 @@ namespace Lykke.Service.Dynamic.Api.Services
                 }
             }            
         }
+        public async Task<Tx[]> GetToAddressTxs(string toAddress, int take, string afterHash)
+        {
+            var txsFinal = new List<Tx>();
+            var counter = 0;
 
+            while (true)
+            {
+                var txs = await GetAddressTxs(toAddress, counter);
+
+                if (!txs.Any())
+                {
+                    return txsFinal.ToArray();
+                }
+
+                foreach (var tx in txs)
+                {
+                    counter++;
+                    foreach (var vout in tx.Vout)
+                    {
+                        if (vout.ScriptPubKey.Addresses.Contains(toAddress))
+                        {
+                            if (tx.Txid == afterHash)
+                            {
+                                return txsFinal.ToArray();
+                            }
+
+                            txsFinal.Add(tx);
+
+                            if (txsFinal.Count == take)
+                            {
+                                return txsFinal.ToArray();
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
         private async Task<Tx[]> GetAddressTxs(string fromAddress, int continuation)
         {
             var txs = await _dynamicDaemonClient.GetAddressTxs(fromAddress, continuation);
