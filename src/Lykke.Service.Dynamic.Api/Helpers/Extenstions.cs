@@ -48,6 +48,12 @@ namespace Lykke.Service.Dynamic.Api.Helpers
             };
         }
 
+        //public static AssetResponse BadAssetResponse(this Asset self)
+        //{
+        //    return new AssetResponse(
+           
+        //}
+
         public static BroadcastedTransactionState ToBroadcastedTransactionState(this BroadcastState self)
         {
             switch (self)
@@ -118,6 +124,8 @@ namespace Lykke.Service.Dynamic.Api.Helpers
                 //toAddress = $"{{ {string.Join(",", toAddresses)} }}";
                 toAddress = toAddresses.FirstOrDefault();
                 amount = vouts.Sum(f => f.Value);
+                //mark 20181005 add fee to total amount
+                amount = amount + self.Fees;
             }
             else
             {
@@ -137,6 +145,8 @@ namespace Lykke.Service.Dynamic.Api.Helpers
                 //toAddress = $"{{ {string.Join(",", toAddresses)} }}";
                 toAddress = address;  
                 amount = vins.Sum(f => f.Value);
+                //mark 20181005 subtract fee from total amount
+                amount = amount - self.Fees;
             }
 
             return new HistoricalTransactionContract
