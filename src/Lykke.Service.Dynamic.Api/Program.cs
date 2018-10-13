@@ -24,7 +24,8 @@ namespace Lykke.Service.Dynamic.Api
             {
                 var host = new WebHostBuilder()
                     .UseKestrel()
-                    .UseUrls("http://*:5000")
+                    //PORT 5000 stoped working locally after patch. need to revert
+                    .UseUrls("http://*:5001")
                     .UseContentRoot(Directory.GetCurrentDirectory())
                     .UseStartup<Startup>()
                     .UseApplicationInsights()
