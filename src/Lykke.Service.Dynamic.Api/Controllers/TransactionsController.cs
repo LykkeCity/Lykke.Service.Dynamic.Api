@@ -38,6 +38,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         [ProducesResponseType(typeof(BuildTransactionResponse), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> Build([Required, FromBody] BuildSingleTransactionRequest request)
         {
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState.ToErrorResponse());
@@ -107,7 +108,8 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         [HttpPost("broadcast")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> Broadcast([Required, FromBody] BroadcastTransactionRequest request)
-        {
+        {           
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState.ToErrorResponse());
@@ -122,7 +124,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             var transaction = _dynamicService.GetTransaction(request.SignedTransaction);
             if (transaction == null)
             {
-                return BadRequest(ErrorResponse.Create($"{nameof(request.SignedTransaction)} is not a valid"));
+                return BadRequest(ErrorResponse.Create($"{nameof(request.SignedTransaction)} is not valid"));
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Broadcast),
