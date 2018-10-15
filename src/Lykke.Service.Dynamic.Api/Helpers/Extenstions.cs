@@ -156,7 +156,7 @@ namespace Lykke.Service.Dynamic.Api.Helpers
                 FromAddress = fromAddress,
                 ToAddress = toAddress,
                 Hash = self.Txid,
-                OperationId = Guid.Empty,
+               // OperationId = Guid.Empty,
                 //mark schroeder 20181002 Dyn uses seconds and not milliseconds. 
                 //Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(self.Time).DateTime.ToUniversalTime()
                 Timestamp = DateTimeOffset.FromUnixTimeSeconds(self.Time).DateTime.ToUniversalTime()
