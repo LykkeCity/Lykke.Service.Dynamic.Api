@@ -16,7 +16,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
                 IsTransactionsRebuildingSupported = false,
                 IsTestingTransfersSupported = false,
                 IsPublicAddressExtensionRequired = false,
-                IsReceiveTransactionRequired = false,
+                IsReceiveTransactionRequired = true,
                 CanReturnExplorerUrl = false
             };
         }
