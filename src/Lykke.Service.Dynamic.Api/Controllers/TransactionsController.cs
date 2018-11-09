@@ -14,6 +14,7 @@ using Lykke.Service.Dynamic.Api.Core.Domain;
 using Lykke.Service.Dynamic.Api.Core.Repositories;
 using Lykke.Service.Dynamic.Api.Services;
 using Lykke.Service.Dynamic.Api.Helpers;
+using System.Collections.Generic;
 
 namespace Lykke.Service.Dynamic.Api.Controllers
 {
@@ -37,6 +38,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         [ProducesResponseType(typeof(BuildTransactionResponse), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> Build([Required, FromBody] BuildSingleTransactionRequest request)
         {
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState.ToErrorResponse());
@@ -106,7 +108,8 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         [HttpPost("broadcast")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> Broadcast([Required, FromBody] BroadcastTransactionRequest request)
-        {
+        {           
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState.ToErrorResponse());
@@ -121,7 +124,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             var transaction = _dynamicService.GetTransaction(request.SignedTransaction);
             if (transaction == null)
             {
-                return BadRequest(ErrorResponse.Create($"{nameof(request.SignedTransaction)} is not a valid"));
+                return BadRequest(ErrorResponse.Create($"{nameof(request.SignedTransaction)} is not valid"));
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Broadcast),
@@ -139,7 +142,8 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             var broadcast = await _dynamicService.GetBroadcastAsync(operationId);
             if (broadcast == null)
             {
-                return NoContent();
+                //return NoContent();
+                return BadRequest();
             }
 
             var amount = broadcast.Amount.HasValue ?
@@ -209,7 +213,50 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         [HttpGet("history/from/{address}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HistoricalTransactionContract[]))]
         public async Task<IActionResult> GetHistoryFromAddress([Required] string address,
-            [Required, FromQuery] int take, 
+            [Required, FromQuery] string take, 
+            [FromQuery] string afterHash)
+
+        {
+            var dynamicAddress = _dynamicService.GetBitcoinAddress(address);
+            if (dynamicAddress == null)
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
+            }
+            if (take != null)
+            {
+                var emptyList = new List<string>();
+                int num1;
+                string testTake = take.ToString();
+                bool res = int.TryParse(testTake, out num1);
+                if (res == false)
+                {
+                    return BadRequest(ErrorResponse.Create($"{nameof(take)} is not a valid number"));
+                }
+
+                var txs = await _dynamicService.GetFromAddressTxs(address, num1, afterHash);
+
+                return Ok(txs.Select(f => f.ToHistoricalTransactionContract(address, true)));
+            }
+            else
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(take)} is not a valid number"));
+            }
+                                                         
+            ////////var dynamicAddress = _dynamicService.GetBitcoinAddress(address);
+            ////////if (dynamicAddress == null)
+            ////////{
+            ////////    return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
+            ////////}
+
+            ////////var txs = await _dynamicService.GetFromAddressTxs(address, take, afterHash);
+
+            ////////return Ok(txs.Select(f => f.ToHistoricalTransactionContract(address, true)));
+        }
+
+        [HttpGet("history/to/{address}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HistoricalTransactionContract[]))]
+        public async Task<IActionResult> GetHistoryToAddress([Required] string address,
+            [Required, FromQuery] string take,
             [FromQuery] string afterHash)
         {
             var dynamicAddress = _dynamicService.GetBitcoinAddress(address);
@@ -217,10 +264,26 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             {
                 return BadRequest(ErrorResponse.Create($"{nameof(address)} is not a valid"));
             }
+            if (take != null)
+            {
+                var emptyList = new List<string>();
+                int num1;
+                string testTake = take.ToString();
+                bool res = int.TryParse(testTake, out num1);
+                if (res == false)
+                {
+                    return BadRequest(ErrorResponse.Create($"{nameof(take)} is not a valid number"));
+                }
 
-            var txs = await _dynamicService.GetFromAddressTxs(address, take, afterHash);
-
-            return Ok(txs.Select(f => f.ToHistoricalTransactionContract(address, true)));
+                var txs = await _dynamicService.GetToAddressTxs(address, num1, afterHash);
+                //mark added false to the below to set "isFrom" flag in extension.cs\ToHistoricalTransactionContract
+                return Ok(txs.Select(f => f.ToHistoricalTransactionContract(address, false)));
+            }
+            else
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(take)} is not a valid number"));
+            }
+                                                            
         }
 
         [HttpDelete("history/from/{address}/observation")]

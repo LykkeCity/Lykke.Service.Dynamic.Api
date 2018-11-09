@@ -24,7 +24,7 @@ namespace Lykke.Service.Dynamic.Job
             {
                 var host = new WebHostBuilder()
                     .UseKestrel()
-                    .UseUrls("http://*:5000")
+                    .UseUrls("http://*:5003")
                     .UseContentRoot(Directory.GetCurrentDirectory())
                     .UseStartup<Startup>()
                     .UseApplicationInsights()

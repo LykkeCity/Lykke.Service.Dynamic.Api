@@ -12,6 +12,7 @@ using Lykke.Service.BlockchainApi.Contract.Balances;
 using Lykke.Service.Dynamic.Api.Core.Repositories;
 using Lykke.Service.Dynamic.Api.Helpers;
 using Lykke.Service.Dynamic.Api.Services;
+using System.Collections.Generic;
 
 namespace Lykke.Service.Dynamic.Api.Controllers
 {
@@ -34,15 +35,44 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             _balancePositiveRepository = balancePositiveRepository;
         }
 
-        [HttpGet]
-        public async Task<PaginationResponse<WalletBalanceContract>> Get([Required, FromQuery] int take, [FromQuery] string continuation)
-        {
-            var result = await _balancePositiveRepository.GetAsync(take, continuation);
+        //[HttpGet]
+        //public async Task<PaginationResponse<WalletBalanceContract>> Get([Required, FromQuery] int take, [FromQuery] string continuation)
+        //{
+        //    var result = await _balancePositiveRepository.GetAsync(take, continuation);
             
-            return PaginationResponse.From(
-                result.ContinuationToken, 
-                result.Entities.Select(f => f.ToWalletBalanceContract()).ToArray()
-            );
+        //    return PaginationResponse.From(
+        //        result.ContinuationToken, 
+        //        result.Entities.Select(f => f.ToWalletBalanceContract()).ToArray()
+        //    );
+        //}
+        //mark schroeder 20181013 modified to meet lykke expectations of status code
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaginationResponse<WalletBalanceContract>[]))]
+        public async Task<IActionResult> Get([Required, FromQuery] string take, [FromQuery] string continuation)
+        {
+            if (take != null)
+            {
+                var emptyList = new List<string>();
+                int num1;
+                string testTake = take.ToString();
+                bool res = int.TryParse(testTake, out num1);
+                if (res == false)
+                {
+                    return BadRequest(ErrorResponse.Create($"{nameof(take)} is not a valid number"));
+                }
+
+                var result = await _balancePositiveRepository.GetAsync(num1, continuation);
+
+                return Ok(PaginationResponse.From(
+                      result.ContinuationToken,
+                    result.Entities.Select(f => f.ToWalletBalanceContract()).ToArray()
+                ));
+            }
+            else
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(take)} is not a valid number"));
+            }
+
         }
 
         [HttpPost("{address}/observation")]
@@ -86,7 +116,8 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             var balance = await _balanceRepository.GetAsync(address);
             if (balance == null)
             {
-                return new StatusCodeResult(StatusCodes.Status204NoContent);
+                //return new StatusCodeResult(StatusCodes.Status204NoContent);
+                return new StatusCodeResult(StatusCodes.Status400BadRequest);
             }
 
             await _log.WriteInfoAsync(nameof(BalancesController), nameof(DeleteFromObservations),

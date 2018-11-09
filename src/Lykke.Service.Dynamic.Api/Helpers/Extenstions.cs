@@ -48,6 +48,12 @@ namespace Lykke.Service.Dynamic.Api.Helpers
             };
         }
 
+        //public static AssetResponse BadAssetResponse(this Asset self)
+        //{
+        //    return new AssetResponse(
+           
+        //}
+
         public static BroadcastedTransactionState ToBroadcastedTransactionState(this BroadcastState self)
         {
             switch (self)
@@ -101,7 +107,7 @@ namespace Lykke.Service.Dynamic.Api.Helpers
             if (isFrom)
             {
                 var vouts = self.Vout.Where(f => !f.ScriptPubKey.Addresses.Contains(address));
-                var toAddresses = new List<string>();
+                var toAddresses = new List<string>();               
 
                 foreach (var vout in vouts)
                 {
@@ -118,10 +124,29 @@ namespace Lykke.Service.Dynamic.Api.Helpers
                 //toAddress = $"{{ {string.Join(",", toAddresses)} }}";
                 toAddress = toAddresses.FirstOrDefault();
                 amount = vouts.Sum(f => f.Value);
+                //mark 20181005 add fee to total amount
+                amount = amount + self.Fees;
             }
             else
             {
-                toAddress = address;
+               
+            var vins = self.Vin.Where(f => !f.Addr.Contains(address));
+            var toAddresses = new List<string>();
+
+            foreach (var vin in vins)
+            {
+                    if (!toAddresses.Contains(vin.Addr))
+                    {
+                        toAddresses.Add(vin.Addr);
+                    }
+            }
+               
+                fromAddress = toAddresses.FirstOrDefault();
+                //toAddress = $"{{ {string.Join(",", toAddresses)} }}";
+                toAddress = address;  
+                amount = vins.Sum(f => f.Value);
+                //mark 20181005 subtract fee from total amount
+                amount = amount - self.Fees;
             }
 
             return new HistoricalTransactionContract
@@ -131,8 +156,10 @@ namespace Lykke.Service.Dynamic.Api.Helpers
                 FromAddress = fromAddress,
                 ToAddress = toAddress,
                 Hash = self.Txid,
-                OperationId = Guid.Empty,
-                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(self.Time).DateTime.ToUniversalTime()
+               // OperationId = Guid.Empty,
+                //mark schroeder 20181002 Dyn uses seconds and not milliseconds. 
+                //Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(self.Time).DateTime.ToUniversalTime()
+                Timestamp = DateTimeOffset.FromUnixTimeSeconds(self.Time).DateTime.ToUniversalTime()
             };
         }
     }
