@@ -3,7 +3,7 @@ using Lykke.Service.Dynamic.Api.Core.Domain.InsightClient;
 
 namespace Lykke.Service.Dynamic.Api.Core.Services
 {
-    public interface IDynamicDaemonClient
+    public interface IDynamicRpcClient
     {
         Task<decimal> GetBalance(string address, int minConfirmations);
 

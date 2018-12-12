@@ -8,12 +8,11 @@ namespace Lykke.Service.Dynamic.Job.Settings
     public class DynamicJobSettings
     {
         public DbSettings Db { get; set; }
-        public string InsightApiUrl { get; set; }
-        public string DaemonDataDir { get; set; }
+        public RpcSettings Rpc { get; set; }
+        public string Network { get; set; }
         public int MinConfirmations { get; set; }
         public TimeSpan BalanceCheckerInterval { get; set; }
         public TimeSpan BroadcastCheckerInterval { get; set; }
-
         [Optional]
         public ChaosSettings ChaosKitty { get; set; }
     }

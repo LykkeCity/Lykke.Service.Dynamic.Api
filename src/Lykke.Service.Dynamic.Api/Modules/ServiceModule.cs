@@ -67,9 +67,10 @@ namespace Lykke.Service.Dynamic.Api.Modules
                 .WithParameter(TypedParameter.From(connectionStringManager))
                 .SingleInstance();
 
-            builder.RegisterType<DynamicDaemonClient>()
-                .As<IDynamicDaemonClient>()
-                .WithParameter("datadir", _settings.CurrentValue.DaemonDataDir)
+            builder.RegisterType<DynamicRpcClient>()
+                .As<IDynamicRpcClient>()
+                .WithParameter("rpcSettings", _settings.CurrentValue.Rpc)
+                .WithParameter("network", _settings.CurrentValue.Network)
                 .SingleInstance();
 
             builder.RegisterType<DynamicService>()

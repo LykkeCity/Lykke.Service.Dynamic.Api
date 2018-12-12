@@ -1,168 +1,51 @@
 ﻿using Common.Log;
-using Flurl.Http;
 using Lykke.Service.Dynamic.Api.Core.Domain.InsightClient;
 using Lykke.Service.Dynamic.Api.Core.Services;
-using Lykke.Service.Dynamic.Api.Services.Helpers;
 using NBitcoin.RPC;
 using NBitcoin.Dynamic.RPC;
 using System;
 using System.Linq;
 using System.Net;
-using System.IO;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using NBitcoin;
+using Lykke.Service.Dynamic.Api.Core.Settings.ServiceSettings;
 
 namespace Lykke.Service.Dynamic.Api.Services
 {
-    public class DynamicDaemonClient : IDynamicDaemonClient
+    public class DynamicRpcClient : IDynamicRpcClient
     {
         private readonly ILog _log;
-        private readonly string _datadir;
 
         private const decimal COIN = 100000000;
-        private const string _configFileName = "dynamic.conf";
-        private const string _rpcUserPrefix = "rpcuser=";
-        private const string _rpcPasswordPrefix = "rpcpassword=";
-        private const string _rpcPortPrefix = "rpcport=";
-        private const string _testNetPrefix = "testnet=1";
-        private const string _testTxIndexOff = "txindex=0";
-        private const string _testAddressIndexOn = "addressindex=1";
-        private const string _testTimeStampIndexOn = "timestampindex=1";
-        private const string _testSpentIndexOn = "spentindex=1";
-        private const string _testServerOn = "server=1";
-        private const string _testDaemonOn = "daemon=1";
         private DynamicRPCClient rpc;
-        private string _userName;
-        private string _password;
-        private uint _rpcPort = 33350;
-        private string _network;
+        private readonly string _userName;
+        private readonly string _password;
+        private readonly uint _rpcPort = 33350;
+        private readonly string _url;
+        private readonly string _network;
         private int nBlockHeight = 0;
-        private bool TxIndexOff = false;
-        private bool AddressIndexOn = false;
-        private bool TimeStampIndexOn = false;
-        private bool SpentIndexOn = false;
-        private bool ServerOn = false;
-        private bool DaemonOn = false;
-        private bool RPCPortSet = false;
-        /*
-         * TODO:
-         * make sure tx, address, timestamp and spent indexing are turned on.
-        */
-        public DynamicDaemonClient(ILog log, string datadir)
+
+        public DynamicRpcClient(ILog log, RpcSettings rpcSettings, string network)
         {
             _log = log;
-            _datadir = datadir;
-            _network = "main";
-            ReadConfigFile();
+            _network = network;
+            _userName = rpcSettings.UserName;
+            _password = rpcSettings.Password;
+            _rpcPort = rpcSettings.Port;
+            _url = rpcSettings.Url;
             InitRPC();
-        }
-       
-        private void ReadConfigFile()
-        {
-            try
-            {
-                string configFile = Path.Combine(_datadir, _configFileName);
-                // Open the file to read from.
-                using (StreamReader streamConfigReader = File.OpenText(configFile))
-                {
-                    string configLine = "";
-                    while ((configLine = streamConfigReader.ReadLine()) != null)
-                    {
-                        if (configLine != null)
-                        {
-                            if (configLine.Length >= _rpcUserPrefix.Length + 1 && configLine.Substring(0, _rpcUserPrefix.Length) == _rpcUserPrefix)
-                            {
-                                _userName = configLine.Substring(_rpcUserPrefix.Length, configLine.Length - (_rpcUserPrefix.Length));
-                            }
-                            else if (configLine.Length >= _rpcPasswordPrefix.Length + 1 && configLine.Substring(0, _rpcPasswordPrefix.Length) == _rpcPasswordPrefix)
-                            {
-                                _password = configLine.Substring(_rpcPasswordPrefix.Length, configLine.Length - (_rpcPasswordPrefix.Length));
-                            }
-                            else if (configLine.Length >= _rpcPortPrefix.Length + 1 && configLine.Substring(0, _rpcPortPrefix.Length) == _rpcPortPrefix)
-                            {
-                                string _strRPCPort = configLine.Substring(_rpcPortPrefix.Length, configLine.Length - (_rpcPortPrefix.Length));
-                                if (!uint.TryParse(_strRPCPort, out uint port))
-                                {
-                                    throw new Exception("Can not convert RPC port to an unsigned integer");
-                                }
-                                _rpcPort = port;
-                                RPCPortSet = true;
-                            }
-                            else if (configLine.Length == _testNetPrefix.Length && configLine == _testNetPrefix)
-                            {
-                                _network = "testnet";
-                            }
-                            else if (configLine.Length == _testAddressIndexOn.Length && configLine == _testAddressIndexOn)
-                            {
-                                AddressIndexOn = true;
-                            }
-                            else if (configLine.Length == _testTimeStampIndexOn.Length && configLine == _testTimeStampIndexOn)
-                            {
-                                TimeStampIndexOn = true;
-                            }
-                            else if (configLine.Length == _testSpentIndexOn.Length && configLine == _testSpentIndexOn)
-                            {
-                                SpentIndexOn = true;
-                            }
-                            else if (configLine.Length == _testServerOn.Length && configLine == _testServerOn)
-                            {
-                                ServerOn = true;
-                            }
-                            else if (configLine.Length == _testDaemonOn.Length && configLine == _testDaemonOn)
-                            {
-                                DaemonOn = true;
-                            }
-                            else if (configLine.Length == _testTxIndexOff.Length && configLine == _testTxIndexOff)
-                            {
-                                TxIndexOff = true;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to read dynamic.conf file.", ex);
-            }
-            if (TxIndexOff)
-            {
-                throw new Exception($"Dynamic wallet needs to have txindex on in the dynamic.conf file (txindex=1).");
-            }
-            if (!AddressIndexOn)
-            {
-                throw new Exception($"Dynamic wallet needs to have addressindex on in the dynamic.conf file (addressindex=1).");
-            }
-            if (!TimeStampIndexOn)
-            {
-                throw new Exception($"Dynamic wallet needs to have timestampindex on in the dynamic.conf file (timestampindex=1).");
-            }
-            if (!SpentIndexOn)
-            {
-                throw new Exception($"Dynamic wallet needs to have spendindex on in the dynamic.conf file (spendindex=1).");
-            }
-            if (!ServerOn)
-            {
-                throw new Exception($"Dynamic wallet needs to have server on in the dynamic.conf file (server=1).");
-            }
-            if (!DaemonOn)
-            {
-                throw new Exception($"Dynamic wallet needs to have daemon on in the dynamic.conf file (daemon=1).");
-            }
-            if (!RPCPortSet)
-            {
-                throw new Exception($"Dynamic wallet needs to have the RPC port set in the dynamic.conf file (rpcport=33350).");
-            }
         }
 
         private void InitRPC()
         {
-            NetworkCredential credential = new NetworkCredential(_userName, _password);
-            Network net = Network.GetNetwork(_network);
-            RPCCredentialString creds = new RPCCredentialString();
-            creds.Server = "http://127.0.0.1:" + Convert.ToUInt32(_rpcPort);
-            creds.UserPassword = credential;
+            var credential = new NetworkCredential(_userName, _password);
+            var net = Network.GetNetwork(_network);
+            var creds = new RPCCredentialString
+            {
+                Server = _url + Convert.ToUInt32(_rpcPort),
+                UserPassword = credential
+            };
             rpc = new DynamicRPCClient(creds, net);
         }
 
@@ -219,7 +102,7 @@ namespace Lykke.Service.Dynamic.Api.Services
 
         private Tx LoadTxFromRPCJson(JsonTransaction jsonResponse, int blockHeight)
         {
-            Tx tx = new Tx();
+            var tx = new Tx();
             NBitcoin.Dynamic.RPC.Transaction rpcTransaction = jsonResponse.result;
             tx.BlockHeight = rpcTransaction.height;
             tx.Confirmations = blockHeight - rpcTransaction.height;
@@ -242,10 +125,12 @@ namespace Lykke.Service.Dynamic.Api.Services
             List<TxVin> listTxVin = new List<TxVin>();
             foreach (Vin input in rpcTransaction.vin)
             {
-                TxVin txIn = new TxVin();
-                txIn.Addr = input.address;
-                txIn.Txid = input.txid;
-                txIn.Value = (decimal)input.value; 
+                TxVin txIn = new TxVin
+                {
+                    Addr = input.address,
+                    Txid = input.txid,
+                    Value = (decimal)input.value
+                };
                 inSatoshis = inSatoshis + input.value;
                 listTxVin.Add(txIn);
             }
@@ -346,7 +231,7 @@ namespace Lykke.Service.Dynamic.Api.Services
             {
                 NBitcoin.Transaction tx = new NBitcoin.Transaction(transactionHex);
                 await rpc.SendRawTransactionAsync(tx);
-                TxBroadcast txBroadcast = new TxBroadcast();
+                var txBroadcast = new TxBroadcast();
                 txBroadcast.Txid = tx.GetHash().ToString();
                 return txBroadcast;
             }

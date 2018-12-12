@@ -18,7 +18,7 @@ namespace Lykke.Service.Dynamic.Api.Services
     public class DynamicService : IDynamicService
     {
         private readonly ILog _log;
-        private readonly IDynamicDaemonClient _dynamicDaemonClient;
+        private readonly IDynamicRpcClient _dynamicRpcClient;
         private readonly IBroadcastRepository _broadcastRepository;
         private readonly IBroadcastInProgressRepository _broadcastInProgressRepository;
         private readonly Network _network;
@@ -26,7 +26,7 @@ namespace Lykke.Service.Dynamic.Api.Services
         private readonly int _minConfirmations;
 
         public DynamicService(ILog log,
-            IDynamicDaemonClient dynamicDaemonClient,
+            IDynamicRpcClient dynamicRpcClient,
             IBroadcastRepository broadcastRepository,
             IBroadcastInProgressRepository broadcastInProgressRepository,
             IBalanceRepository balanceRepository,
@@ -38,7 +38,7 @@ namespace Lykke.Service.Dynamic.Api.Services
             DynamicNetworks.Register();
 
             _log = log;
-            _dynamicDaemonClient = dynamicDaemonClient;
+            _dynamicRpcClient = dynamicRpcClient;
             _broadcastRepository = broadcastRepository;
             _broadcastInProgressRepository = broadcastInProgressRepository;
             _network = Network.GetNetwork(network);
@@ -74,7 +74,7 @@ namespace Lykke.Service.Dynamic.Api.Services
             BitcoinAddress toAddress, decimal amount, bool includeFee)
         {
             var sendAmount = Money.FromUnit(amount, Asset.Dynamic.Unit);
-            var txsUnspent = await _dynamicDaemonClient.GetTxsUnspentAsync(fromAddress.ToString(), _minConfirmations);
+            var txsUnspent = await _dynamicRpcClient.GetTxsUnspentAsync(fromAddress.ToString(), _minConfirmations);
 
             var builder = new TransactionBuilder()
                 .Send(toAddress, sendAmount)
@@ -117,7 +117,7 @@ namespace Lykke.Service.Dynamic.Api.Services
 
             try
             {
-                response = await _dynamicDaemonClient.BroadcastTxAsync(transaction.ToHex());
+                response = await _dynamicRpcClient.BroadcastTxAsync(transaction.ToHex());
 
                 if (response == null)
                 {
@@ -136,7 +136,7 @@ namespace Lykke.Service.Dynamic.Api.Services
                 throw;
             }
 
-            var block = await _dynamicDaemonClient.GetLatestBlockHeight();
+            var block = await _dynamicRpcClient.GetLatestBlockHeight();
 
             await _broadcastRepository.AddAsync(operationId, response.Txid, block);
             await _broadcastInProgressRepository.AddAsync(operationId, response.Txid);
@@ -155,7 +155,7 @@ namespace Lykke.Service.Dynamic.Api.Services
 
         public async Task<decimal> GetAddressBalance(string address)
         {
-            return await _dynamicDaemonClient.GetBalance(address, _minConfirmations);
+            return await _dynamicRpcClient.GetBalance(address, _minConfirmations);
         }
 
         public decimal GetFee()
@@ -238,7 +238,7 @@ namespace Lykke.Service.Dynamic.Api.Services
         }
         private async Task<Tx[]> GetAddressTxs(string fromAddress, int continuation)
         {
-            var txs = await _dynamicDaemonClient.GetAddressTxs(fromAddress, continuation);
+            var txs = await _dynamicRpcClient.GetAddressTxs(fromAddress, continuation);
 
             return txs?.ToArray() ?? new Tx[] { };
         }
