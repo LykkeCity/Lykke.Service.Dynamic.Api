@@ -2,6 +2,7 @@
 using Lykke.Service.Dynamic.Api.Core.Domain.InsightClient;
 using Lykke.Service.Dynamic.Api.Core.Services;
 using NBitcoin.RPC;
+using NBitcoin.Dynamic;
 using NBitcoin.Dynamic.RPC;
 using System;
 using System.Linq;
@@ -25,11 +26,36 @@ namespace Lykke.Service.Dynamic.Api.Services
         private readonly string _url;
         private readonly string _network;
         private int nBlockHeight = 0;
+        private readonly Network net;
 
         public DynamicRpcClient(ILog log, RpcSettings rpcSettings, string network)
         {
             _log = log;
-            _network = network;
+            if (network == "dynamic-main") {
+                net = DynamicNetworks.Mainnet;
+            }
+            else if (network == "dynamic-mainnet")
+            {
+                net = DynamicNetworks.Mainnet;
+            }
+            else if (network == "main")
+            {
+                net = DynamicNetworks.Mainnet;
+            }
+            else if (network == "dynamic-test") {
+                net = DynamicNetworks.Testnet;
+            }
+            else if (network == "dynamic-testnet")
+            {
+                net = DynamicNetworks.Testnet;
+            }
+            else if (network == "testnet")
+            {
+                net = DynamicNetworks.Testnet;
+            }
+            else {
+                throw new Exception($"Incorrect network name setting: " + network);
+            }
             _userName = rpcSettings.UserName;
             _password = rpcSettings.Password;
             _rpcPort = rpcSettings.Port;
@@ -40,10 +66,9 @@ namespace Lykke.Service.Dynamic.Api.Services
         private void InitRPC()
         {
             var credential = new NetworkCredential(_userName, _password);
-            var net = Network.GetNetwork(_network);
             var creds = new RPCCredentialString
             {
-                Server = _url + Convert.ToUInt32(_rpcPort),
+                Server = _url + ":" + Convert.ToUInt32(_rpcPort),
                 UserPassword = credential
             };
             rpc = new DynamicRPCClient(creds, net);
