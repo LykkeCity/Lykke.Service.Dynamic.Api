@@ -13,11 +13,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             {
                 AreManyInputsSupported = false,
                 AreManyOutputsSupported = false,
-                IsTransactionsRebuildingSupported = false,
-                IsTestingTransfersSupported = false,
-                IsPublicAddressExtensionRequired = false,
-                IsReceiveTransactionRequired = true,
-                CanReturnExplorerUrl = false
+                IsTransactionsRebuildingSupported = false
             };
         }
     }
