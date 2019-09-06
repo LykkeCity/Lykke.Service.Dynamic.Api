@@ -24,7 +24,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         private readonly IDynamicService _dynamicService;
         private readonly IBuildRepository _buildRepository;
 
-        public TransactionsController(ILog log, 
+        public TransactionsController(ILog log,
             IDynamicService dynamicService,
             IBuildRepository buildRepository)
         {
@@ -85,7 +85,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Build),
                 request.ToJson(), "Build transaction");
 
-            var transactionContext = await _dynamicService.BuildTransactionAsync(request.OperationId, fromAddress, 
+            var transactionContext = await _dynamicService.BuildTransactionAsync(request.OperationId, fromAddress,
                 toAddress, amount, request.IncludeFee);
 
             await _buildRepository.AddAsync(request.OperationId, transactionContext);
@@ -139,7 +139,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             var broadcast = await _dynamicService.GetBroadcastAsync(operationId);
             if (broadcast == null)
             {
-                return NoContent();
+                return NotFound();
             }
 
             var amount = broadcast.Amount.HasValue ?
@@ -171,7 +171,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(DeleteBroadcast),
-                new { operationId = operationId }.ToJson(), 
+                new { operationId = operationId }.ToJson(),
                 "Delete broadcast");
 
             await _buildRepository.DeleteAsync(operationId);
@@ -209,7 +209,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         [HttpGet("history/from/{address}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HistoricalTransactionContract[]))]
         public async Task<IActionResult> GetHistoryFromAddress([Required] string address,
-            [Required, FromQuery] int take, 
+            [Required, FromQuery] int take,
             [FromQuery] string afterHash)
         {
             var dynamicAddress = _dynamicService.GetBitcoinAddress(address);

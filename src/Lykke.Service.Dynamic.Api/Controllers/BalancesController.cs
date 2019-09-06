@@ -23,7 +23,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         private readonly IBalanceRepository _balanceRepository;
         private readonly IBalancePositiveRepository _balancePositiveRepository;
 
-        public BalancesController(ILog log, 
+        public BalancesController(ILog log,
             IDynamicService dynamicService,
             IBalanceRepository balanceRepository,
             IBalancePositiveRepository balancePositiveRepository)
@@ -35,14 +35,19 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<PaginationResponse<WalletBalanceContract>> Get([Required, FromQuery] int take, [FromQuery] string continuation)
+        public async Task<IActionResult> Get([Required, FromQuery] int take, [FromQuery] string continuation)
         {
+            if (take <= 0)
+            {
+                return BadRequest();
+            }
+
             var result = await _balancePositiveRepository.GetAsync(take, continuation);
             
-            return PaginationResponse.From(
-                result.ContinuationToken, 
+            return Ok(PaginationResponse.From(
+                result.ContinuationToken,
                 result.Entities.Select(f => f.ToWalletBalanceContract()).ToArray()
-            );
+            ));
         }
 
         [HttpPost("{address}/observation")]
@@ -81,6 +86,12 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             if (string.IsNullOrEmpty(address))
             {
                 return BadRequest(ErrorResponse.Create($"{nameof(address)} is null or empty"));
+            }
+
+            var validAddress = _dynamicService.GetBitcoinAddress(address) != null;
+            if (!validAddress)
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(address)} is not valid"));
             }
 
             var balance = await _balanceRepository.GetAsync(address);
