@@ -59,6 +59,12 @@ namespace Lykke.Service.Dynamic.Api.Controllers
                 return BadRequest(ErrorResponse.Create($"{nameof(request.AssetId)} was not found"));
             }
 
+            var broadcast = await _dynamicService.GetBroadcastAsync(request.OperationId);
+            if (broadcast != null)
+            {
+                return new StatusCodeResult(StatusCodes.Status409Conflict);
+            }
+
             var build = await _buildRepository.GetAsync(request.OperationId);
             if (build != null)
             {
@@ -79,7 +85,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             }
             if (requiredBalance > fromAddressBalance)
             {
-                return BadRequest(BlockchainErrorResponse.FromKnownError(BlockchainErrorCode.NotEnoughtBalance));
+                return BadRequest(BlockchainErrorResponse.FromKnownError(BlockchainErrorCode.NotEnoughBalance));
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Build),
@@ -136,6 +142,11 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         [ProducesResponseType(typeof(BroadcastedSingleTransactionResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetBroadcast([Required] Guid operationId)
         {
+            if (operationId == Guid.Empty)
+            {
+                return BadRequest();
+            }
+
             var broadcast = await _dynamicService.GetBroadcastAsync(operationId);
             if (broadcast == null)
             {

@@ -91,7 +91,7 @@ namespace Lykke.Service.Dynamic.Api.Helpers
             };
         }
 
-        public static HistoricalTransactionContract ToHistoricalTransactionContract(this Tx self, string address, 
+        public static HistoricalTransactionContract ToHistoricalTransactionContract(this Tx self, string address,
             bool isFrom)
         {
             var fromAddress = "";
@@ -131,7 +131,6 @@ namespace Lykke.Service.Dynamic.Api.Helpers
                 FromAddress = fromAddress,
                 ToAddress = toAddress,
                 Hash = self.Txid,
-                OperationId = Guid.Empty,
                 Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(self.Time).DateTime.ToUniversalTime()
             };
         }
