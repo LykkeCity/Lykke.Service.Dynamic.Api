@@ -118,16 +118,16 @@ namespace Lykke.Service.Dynamic.Api.Controllers
                 return BadRequest(ModelState.ToErrorResponse());
             }
 
-            var broadcast = await _dynamicService.GetBroadcastAsync(request.OperationId);
-            if (broadcast != null)
-            {
-                return new StatusCodeResult(StatusCodes.Status409Conflict);
-            }
-
             var transaction = _dynamicService.GetTransaction(request.SignedTransaction);
             if (transaction == null)
             {
                 return BadRequest(ErrorResponse.Create($"{nameof(request.SignedTransaction)} is not a valid"));
+            }
+
+            var broadcast = await _dynamicService.GetBroadcastAsync(request.OperationId);
+            if (broadcast != null)
+            {
+                return new StatusCodeResult(StatusCodes.Status409Conflict);
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Broadcast),
