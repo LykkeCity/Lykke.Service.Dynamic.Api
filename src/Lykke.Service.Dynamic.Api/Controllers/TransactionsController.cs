@@ -150,7 +150,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             var broadcast = await _dynamicService.GetBroadcastAsync(operationId);
             if (broadcast == null)
             {
-                return NotFound();
+                return NoContent();
             }
 
             var amount = broadcast.Amount.HasValue ?
