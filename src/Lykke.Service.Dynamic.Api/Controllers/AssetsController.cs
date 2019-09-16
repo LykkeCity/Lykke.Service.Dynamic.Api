@@ -12,11 +12,16 @@ namespace Lykke.Service.Dynamic.Api.Controllers
     public class AssetsController : Controller
     {
         [HttpGet]
-        public PaginationResponse<AssetResponse> Get([Required, FromQuery] int take, [FromQuery] string continuation)
+        public IActionResult Get([Required, FromQuery] int take, [FromQuery] string continuation)
         {
+            if (take <= 0)
+            {
+                return BadRequest();
+            }
+
             var assets = new AssetResponse[] { Asset.Dynamic.ToAssetResponse() };
 
-            return PaginationResponse.From("", assets);
+            return Ok(PaginationResponse.From("", assets));
         }
 
         [HttpGet("{assetId}")]
@@ -25,7 +30,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         {
             if(Asset.Dynamic.Id != assetId)
             {
-                return NotFound();
+                return NoContent();
             }
 
             return Ok(Asset.Dynamic.ToAssetResponse());

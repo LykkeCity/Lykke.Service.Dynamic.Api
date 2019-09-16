@@ -24,7 +24,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         private readonly IDynamicService _dynamicService;
         private readonly IBuildRepository _buildRepository;
 
-        public TransactionsController(ILog log, 
+        public TransactionsController(ILog log,
             IDynamicService dynamicService,
             IBuildRepository buildRepository)
         {
@@ -59,6 +59,12 @@ namespace Lykke.Service.Dynamic.Api.Controllers
                 return BadRequest(ErrorResponse.Create($"{nameof(request.AssetId)} was not found"));
             }
 
+            var broadcast = await _dynamicService.GetBroadcastAsync(request.OperationId);
+            if (broadcast != null)
+            {
+                return new StatusCodeResult(StatusCodes.Status409Conflict);
+            }
+
             var build = await _buildRepository.GetAsync(request.OperationId);
             if (build != null)
             {
@@ -79,13 +85,13 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             }
             if (requiredBalance > fromAddressBalance)
             {
-                return BadRequest(BlockchainErrorResponse.FromKnownError(BlockchainErrorCode.NotEnoughtBalance));
+                return BadRequest(BlockchainErrorResponse.FromKnownError(BlockchainErrorCode.NotEnoughBalance));
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Build),
                 request.ToJson(), "Build transaction");
 
-            var transactionContext = await _dynamicService.BuildTransactionAsync(request.OperationId, fromAddress, 
+            var transactionContext = await _dynamicService.BuildTransactionAsync(request.OperationId, fromAddress,
                 toAddress, amount, request.IncludeFee);
 
             await _buildRepository.AddAsync(request.OperationId, transactionContext);
@@ -112,16 +118,16 @@ namespace Lykke.Service.Dynamic.Api.Controllers
                 return BadRequest(ModelState.ToErrorResponse());
             }
 
-            var broadcast = await _dynamicService.GetBroadcastAsync(request.OperationId);
-            if (broadcast != null)
-            {
-                return new StatusCodeResult(StatusCodes.Status409Conflict);
-            }
-
             var transaction = _dynamicService.GetTransaction(request.SignedTransaction);
             if (transaction == null)
             {
                 return BadRequest(ErrorResponse.Create($"{nameof(request.SignedTransaction)} is not a valid"));
+            }
+
+            var broadcast = await _dynamicService.GetBroadcastAsync(request.OperationId);
+            if (broadcast != null)
+            {
+                return new StatusCodeResult(StatusCodes.Status409Conflict);
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(Broadcast),
@@ -136,6 +142,11 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         [ProducesResponseType(typeof(BroadcastedSingleTransactionResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetBroadcast([Required] Guid operationId)
         {
+            if (operationId == Guid.Empty)
+            {
+                return BadRequest();
+            }
+
             var broadcast = await _dynamicService.GetBroadcastAsync(operationId);
             if (broadcast == null)
             {
@@ -171,7 +182,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
             }
 
             await _log.WriteInfoAsync(nameof(TransactionsController), nameof(DeleteBroadcast),
-                new { operationId = operationId }.ToJson(), 
+                new { operationId = operationId }.ToJson(),
                 "Delete broadcast");
 
             await _buildRepository.DeleteAsync(operationId);
@@ -209,7 +220,7 @@ namespace Lykke.Service.Dynamic.Api.Controllers
         [HttpGet("history/from/{address}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HistoricalTransactionContract[]))]
         public async Task<IActionResult> GetHistoryFromAddress([Required] string address,
-            [Required, FromQuery] int take, 
+            [Required, FromQuery] int take,
             [FromQuery] string afterHash)
         {
             var dynamicAddress = _dynamicService.GetBitcoinAddress(address);
